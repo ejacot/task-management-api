@@ -22,4 +22,7 @@ public class HotelWorkController {
 
     @PutMapping("/logs/{id}/submit")
     public HotelDtos.LogView submit(Authentication auth, @PathVariable Long id) { return service.submit(auth.getName(), id); }
+
+    @PutMapping("/notifications/{id}/read") @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void read(Authentication auth,@PathVariable Long id){service.readNotification(auth.getName(),id);}
 }

@@ -12,7 +12,14 @@ Double-click `start-local.cmd`. The script starts the application with demo data
 http://localhost:8080
 ```
 
-Use `mariana` / `demo1234` to explore the employee experience. Data is saved in the local `data` directory. No Docker or PostgreSQL setup is required for this mode.
+Demo accounts:
+
+- employee: `mariana` / `demo1234`
+- manager: `manager` / `manager1234`
+- checker: `checker` / `checker1234`
+- employer: `angajator` / `admin1234`
+
+Data is saved in the local `data` directory. No Docker or PostgreSQL setup is required for this mode.
 
 ## Highlights
 
@@ -23,6 +30,10 @@ Use `mariana` / `demo1234` to explore the employee experience. Data is saved in 
 - Weekly shift plans and configurable hourly/room work types
 - Room-to-hour conversion, time tracking, breaks and approval statuses
 - Monthly hours, room totals, gross and clearly labelled estimated net pay
+- Multi-employee weekly planning, absences and in-app notifications
+- Separate Normal, Junior Suite and President room counts
+- Room-list photo attachments and manager/checker approval
+- Effective-dated hourly pay rates and configurable premium defaults
 - OpenAPI/Swagger documentation
 - Integration tests with MockMvc and H2 in PostgreSQL compatibility mode
 - Docker Compose for a one-command local environment

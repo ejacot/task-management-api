@@ -9,7 +9,7 @@ import java.util.List;
 public final class HotelDtos {
     private HotelDtos() {}
     public record Bootstrap(Me me, HotelView hotel, List<WorkTypeView> workTypes,
-                            List<PlanView> plans, List<LogView> logs, Metrics metrics) {}
+                            List<PlanView> plans, List<LogView> logs, List<NotificationView> notifications, Metrics metrics) {}
     public record Me(Long id, String username, String email, String phone, UserRole role, BigDecimal hourlyRate) {
         static Me from(UserAccount u) { return new Me(u.getId(), u.getUsername(), u.getEmail(), u.getPhone(), u.getRole(), u.getHourlyRate()); }
     }
@@ -17,14 +17,15 @@ public final class HotelDtos {
     public record WorkTypeView(Long id, String code, String name, WorkUnit unit, BigDecimal roomsPerHour, String color) {
         static WorkTypeView from(WorkType t) { return new WorkTypeView(t.getId(), t.getCode(), t.getName(), t.getUnit(), t.getRoomsPerHour(), t.getColor()); }
     }
-    public record PlanView(Long id, LocalDate date, LocalTime startTime, LocalTime endTime,
-                           String workType, String color, PlanStatus status, String notes) {
-        static PlanView from(ShiftPlan p) { return new PlanView(p.getId(), p.getWorkDate(), p.getStartTime(), p.getEndTime(), p.getWorkType().getName(), p.getWorkType().getColor(), p.getStatus(), p.getNotes()); }
+    public record PlanView(Long id, Long employeeId,String employee, LocalDate date, LocalTime startTime, LocalTime endTime,
+                           String workType, String color, ShiftKind kind, PlanStatus status, String notes) {
+        static PlanView from(ShiftPlan p) { return new PlanView(p.getId(),p.getEmployee().getId(),p.getEmployee().getUsername(),p.getWorkDate(), p.getStartTime(), p.getEndTime(), p.getWorkType()==null?null:p.getWorkType().getName(), p.getWorkType()==null?"#9aa29f":p.getWorkType().getColor(),p.getKind(), p.getStatus(), p.getNotes()); }
     }
-    public record LogView(Long id, LocalDate date, LocalTime startTime, LocalTime endTime, int breakMinutes,
+    public record LogView(Long id,String employee, LocalDate date, LocalTime startTime, LocalTime endTime, int breakMinutes,
                           String workType, WorkUnit unit, RoomType roomType, Integer quantity,
-                          BigDecimal hours, LogStatus status, String notes) {
-        static LogView from(WorkLog l) { return new LogView(l.getId(), l.getWorkDate(), l.getStartTime(), l.getEndTime(), l.getBreakMinutes(), l.getWorkType().getName(), l.getWorkType().getUnit(), l.getRoomType(), l.getQuantity(), l.getCalculatedHours(), l.getStatus(), l.getNotes()); }
+                          int normalRooms,int juniorRooms,int presidentRooms,boolean hasAttachment,String attachmentName,
+                          BigDecimal hours, LogStatus status, String rejectionReason,String notes) {
+        static LogView from(WorkLog l) { return new LogView(l.getId(),l.getEmployee().getUsername(),l.getWorkDate(),l.getStartTime(),l.getEndTime(),l.getBreakMinutes(),l.getWorkType().getName(),l.getWorkType().getUnit(),l.getRoomType(),l.getQuantity(),l.getNormalRooms(),l.getJuniorRooms(),l.getPresidentRooms(),l.hasAttachment(),l.getAttachmentName(),l.getCalculatedHours(),l.getStatus(),l.getRejectionReason(),l.getNotes()); }
     }
     public record Metrics(BigDecimal monthHours, BigDecimal gross, BigDecimal estimatedNet, int rooms) {}
     public record CreateLog(
@@ -35,6 +36,12 @@ public final class HotelDtos {
             @Min(0) @Max(180) Integer breakMinutes,
             RoomType roomType,
             @Min(1) Integer quantity,
+            @Min(0) Integer normalRooms,
+            @Min(0) Integer juniorRooms,
+            @Min(0) Integer presidentRooms,
+            @Size(max=255) String attachmentName,
+            String attachmentData,
             @Size(max = 500) String notes) {}
+    public record NotificationView(Long id,String title,String message,String link,boolean read,Instant createdAt){static NotificationView from(Notification n){return new NotificationView(n.getId(),n.getTitle(),n.getMessage(),n.getLink(),n.isRead(),n.getCreatedAt());}}
 }
 

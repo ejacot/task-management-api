@@ -10,11 +10,12 @@ public class ShiftPlan {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "employee_id") private UserAccount employee;
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "hotel_id") private Hotel hotel;
-    @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "work_type_id") private WorkType workType;
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "work_type_id") private WorkType workType;
     @Column(name = "work_date", nullable = false) private LocalDate workDate;
     @Column(name = "start_time") private LocalTime startTime;
     @Column(name = "end_time") private LocalTime endTime;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private PlanStatus status;
+    @Enumerated(EnumType.STRING) @Column(nullable=false,length=20) private ShiftKind kind=ShiftKind.WORK;
     @Column(length = 500) private String notes;
     @Column(name = "updated_at", nullable = false) private Instant updatedAt;
 
@@ -25,6 +26,8 @@ public class ShiftPlan {
         this.startTime = startTime; this.endTime = endTime; this.notes = notes;
         this.status = PlanStatus.PLANNED; this.updatedAt = Instant.now();
     }
+    public ShiftPlan(UserAccount employee,Hotel hotel,WorkType workType,LocalDate workDate,LocalTime startTime,LocalTime endTime,String notes,ShiftKind kind){this(employee,hotel,workType,workDate,startTime,endTime,notes);this.kind=kind;}
+    public void update(WorkType type,LocalDate date,LocalTime start,LocalTime end,String notes,ShiftKind kind){this.workType=type;this.workDate=date;this.startTime=start;this.endTime=end;this.notes=notes;this.kind=kind;this.status=PlanStatus.CHANGED;this.updatedAt=Instant.now();}
     public Long getId() { return id; }
     public UserAccount getEmployee() { return employee; }
     public Hotel getHotel() { return hotel; }
@@ -33,6 +36,7 @@ public class ShiftPlan {
     public LocalTime getStartTime() { return startTime; }
     public LocalTime getEndTime() { return endTime; }
     public PlanStatus getStatus() { return status; }
+    public ShiftKind getKind(){return kind;}
     public String getNotes() { return notes; }
 }
 

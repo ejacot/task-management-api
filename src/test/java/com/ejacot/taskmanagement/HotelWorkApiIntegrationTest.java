@@ -29,14 +29,37 @@ class HotelWorkApiIntegrationTest {
         long roomTypeId = new com.fasterxml.jackson.databind.ObjectMapper().readTree(body)
                 .get("workTypes").get(0).get("id").asLong();
 
-        mvc.perform(post("/api/hotel/logs")
+        String logBody = mvc.perform(post("/api/hotel/logs")
                         .with(httpBasic("mariana", "demo1234"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"workTypeId":%d,"workDate":"2026-07-06","quantity":12,"roomType":"NORMAL"}
+                                {"workTypeId":%d,"workDate":"2026-07-06","normalRooms":12,"juniorRooms":0,"presidentRooms":0,"roomType":"NORMAL"}
                                 """.formatted(roomTypeId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.hours").value(5.00))
-                .andExpect(jsonPath("$.status").value("DRAFT"));
+                .andExpect(jsonPath("$.normalRooms").value(12))
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andReturn().getResponse().getContentAsString();
+
+        long logId = new com.fasterxml.jackson.databind.ObjectMapper().readTree(logBody).get("id").asLong();
+        mvc.perform(put("/api/hotel/logs/{id}/submit",logId).with(httpBasic("mariana","demo1234")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("SUBMITTED"));
+        mvc.perform(put("/api/management/logs/{id}/review",logId).with(httpBasic("checker","checker1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"approved\":true}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("APPROVED"));
+    }
+
+    @Test
+    void managerCanPublishAnAbsencePlanForEmployee() throws Exception {
+        String bootstrap=mvc.perform(get("/api/hotel/bootstrap").with(httpBasic("mariana","demo1234")))
+                .andReturn().getResponse().getContentAsString();
+        long employeeId=new com.fasterxml.jackson.databind.ObjectMapper().readTree(bootstrap).get("me").get("id").asLong();
+        mvc.perform(post("/api/management/plans").with(httpBasic("manager","manager1234"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"employeeIds":[%d],"date":"2026-07-12","kind":"VACATION","notes":"Concediu aprobat"}
+                                """.formatted(employeeId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$[0].kind").value("VACATION"));
     }
 }

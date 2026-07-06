@@ -16,14 +16,23 @@ public class DemoDataConfig {
     @Bean
     ApplicationRunner demoData(HotelRepository hotels, UserAccountRepository users,
                                WorkTypeRepository workTypes, ShiftPlanRepository plans,
-                               WorkLogRepository logs, PasswordEncoder encoder) {
+                               WorkLogRepository logs,PayRateRepository payRates,NotificationRepository notifications, PasswordEncoder encoder) {
         return args -> {
-            if (users.findByUsername("mariana").isPresent()) return;
+            if (users.findByUsername("mariana").isPresent()) {
+                Hotel existing=users.findByUsername("mariana").orElseThrow().getHotel();
+                if(users.findByUsername("checker").isEmpty())users.save(new UserAccount("checker",encoder.encode("checker1234"),"checker@example.com","+4915100000003",UserRole.CHECKER,BigDecimal.ZERO,existing));
+                if(users.findByUsername("angajator").isEmpty())users.save(new UserAccount("angajator",encoder.encode("admin1234"),"admin@example.com","+4915100000004",UserRole.EMPLOYER,BigDecimal.ZERO,existing));
+                if(payRates.findFirstByEmployeeUsernameAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc("mariana",LocalDate.now()).isEmpty())payRates.save(new PayRate(users.findByUsername("mariana").orElseThrow(),new BigDecimal("17.25"),LocalDate.now().withDayOfYear(1)));
+                return;
+            }
             Hotel hotel = hotels.save(new Hotel("Infinity Hotel", "Unterschleißheim"));
             UserAccount employee = users.save(new UserAccount("mariana", encoder.encode("demo1234"),
                     "mariana@example.com", "+4915112345678", UserRole.EMPLOYEE, new BigDecimal("17.25"), hotel));
             users.save(new UserAccount("manager", encoder.encode("manager1234"),
                     "manager@example.com", "+4915198765432", UserRole.MANAGER, BigDecimal.ZERO, hotel));
+            users.save(new UserAccount("checker",encoder.encode("checker1234"),"checker@example.com","+4915100000003",UserRole.CHECKER,BigDecimal.ZERO,hotel));
+            users.save(new UserAccount("angajator",encoder.encode("admin1234"),"admin@example.com","+4915100000004",UserRole.EMPLOYER,BigDecimal.ZERO,hotel));
+            payRates.save(new PayRate(employee,new BigDecimal("17.25"),LocalDate.now().withDayOfYear(1)));
 
             WorkType normal = workTypes.save(new WorkType(hotel, "ROOM_NORMAL", "Camere Normal", WorkUnit.ROOMS, new BigDecimal("2.40"), "#17806D"));
             WorkType junior = workTypes.save(new WorkType(hotel, "ROOM_JUNIOR", "Junior Suite", WorkUnit.ROOMS, new BigDecimal("1.60"), "#B67A2D"));
@@ -50,6 +59,7 @@ public class DemoDataConfig {
                 log.submit();
                 logs.save(log);
             }
+            notifications.save(new Notification(employee,"Planul săptămânii este disponibil","Programul pentru săptămâna curentă a fost publicat.","plan"));
         };
     }
 }
