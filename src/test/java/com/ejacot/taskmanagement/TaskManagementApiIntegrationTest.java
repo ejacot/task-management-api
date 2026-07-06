@@ -51,5 +51,11 @@ class TaskManagementApiIntegrationTest {
     void anonymousUsersCannotReadTasks() throws Exception {
         mvc.perform(get("/api/tasks")).andExpect(status().isUnauthorized());
     }
-}
 
+    @Test
+    void webApplicationIsPubliclyAvailable() throws Exception {
+        mvc.perform(get("/index.html"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("taskflow")));
+    }
+}

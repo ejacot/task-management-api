@@ -2,6 +2,18 @@
 
 A secure REST API for personal task management, built as a backend engineering portfolio project.
 
+It also includes a responsive browser interface, so the repository is a complete application rather than an API-only demo.
+
+## Easiest way to start on Windows
+
+Double-click `start-local.cmd`. The script starts the application with a local embedded database and opens:
+
+```text
+http://localhost:8080
+```
+
+Create an account in the browser, then add, edit, complete and delete tasks. Data is saved in the local `data` directory. No Docker or PostgreSQL setup is required for this mode. Keep the terminal window open while using the application; close it with `Ctrl+C`.
+
 ## Highlights
 
 - Java 21 and Spring Boot 3
@@ -13,6 +25,7 @@ A secure REST API for personal task management, built as a backend engineering p
 - Integration tests with MockMvc and H2 in PostgreSQL compatibility mode
 - Docker Compose for a one-command local environment
 - GitHub Actions CI
+- Responsive frontend built with HTML, CSS and vanilla JavaScript
 
 ## Architecture
 
@@ -28,7 +41,7 @@ Database changes are managed through migrations in `src/main/resources/db/migrat
 
 ## Run locally
 
-Requirements: Java 21 and Docker.
+Requirements: Java 21 and Docker. For the no-Docker Windows option, use `start-local.cmd` as described above.
 
 ```bash
 docker compose up -d postgres
