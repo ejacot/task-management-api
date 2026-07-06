@@ -18,10 +18,12 @@ public class HotelWorkService {
     private final WorkTypeRepository workTypes;
     private final ShiftPlanRepository plans;
     private final WorkLogRepository logs;
+    private final NotificationRepository notifications;
+    private final PayRateRepository payRates;
 
     public HotelWorkService(UserAccountRepository users, WorkTypeRepository workTypes,
-                            ShiftPlanRepository plans, WorkLogRepository logs) {
-        this.users = users; this.workTypes = workTypes; this.plans = plans; this.logs = logs;
+                            ShiftPlanRepository plans, WorkLogRepository logs,NotificationRepository notifications,PayRateRepository payRates) {
+        this.users = users; this.workTypes = workTypes; this.plans = plans; this.logs = logs;this.notifications=notifications;this.payRates=payRates;
     }
 
     @Transactional(readOnly = true)
@@ -32,7 +34,8 @@ public class HotelWorkService {
         LocalDate monthStart = today.withDayOfMonth(1);
         List<WorkLog> monthLogs = logs.findAllByEmployeeUsernameAndWorkDateBetweenOrderByWorkDateDesc(username, monthStart, today);
         BigDecimal hours = monthLogs.stream().map(WorkLog::getCalculatedHours).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal gross = hours.multiply(user.getHourlyRate()).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal rate=payRates.findFirstByEmployeeUsernameAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(username,today).map(PayRate::getHourlyRate).orElse(user.getHourlyRate());
+        BigDecimal gross = hours.multiply(rate).setScale(2, RoundingMode.HALF_UP);
         BigDecimal estimatedNet = gross.multiply(new BigDecimal("0.72")).setScale(2, RoundingMode.HALF_UP);
         LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1L);
         return new HotelDtos.Bootstrap(
@@ -41,6 +44,7 @@ public class HotelWorkService {
                 workTypes.findAllByHotelIdAndActiveTrueOrderByName(user.getHotel().getId()).stream().map(HotelDtos.WorkTypeView::from).toList(),
                 plans.findAllByEmployeeUsernameAndWorkDateBetweenOrderByWorkDateAscStartTimeAsc(username, weekStart, weekStart.plusDays(13)).stream().map(HotelDtos.PlanView::from).toList(),
                 monthLogs.stream().map(HotelDtos.LogView::from).toList(),
+                notifications.findTop20ByRecipientUsernameOrderByCreatedAtDesc(username).stream().map(HotelDtos.NotificationView::from).toList(),
                 new HotelDtos.Metrics(hours, gross, estimatedNet, monthLogs.stream().mapToInt(log -> log.getQuantity() == null ? 0 : log.getQuantity()).sum())
         );
     }
@@ -53,6 +57,7 @@ public class HotelWorkService {
         BigDecimal hours = calculateHours(type, request);
         WorkLog log = new WorkLog(user, user.getHotel(), type, request.workDate(), request.startTime(), request.endTime(),
                 request.breakMinutes() == null ? 0 : request.breakMinutes(), request.roomType(), request.quantity(), hours, request.notes());
+        if(type.getUnit()==WorkUnit.ROOMS&&(value(request.normalRooms())+value(request.juniorRooms())+value(request.presidentRooms())>0||request.attachmentData()!=null)) log.setRoomBreakdown(value(request.normalRooms()),value(request.juniorRooms()),value(request.presidentRooms()),request.attachmentName(),request.attachmentData());
         return HotelDtos.LogView.from(logs.save(log));
     }
 
@@ -65,6 +70,8 @@ public class HotelWorkService {
 
     private BigDecimal calculateHours(WorkType type, HotelDtos.CreateLog request) {
         if (type.getUnit() == WorkUnit.ROOMS) {
+            int total=value(request.normalRooms())+value(request.juniorRooms())+value(request.presidentRooms());
+            if(total>0){Hotel h=type.getHotel();return BigDecimal.valueOf(value(request.normalRooms())).divide(h.getNormalRoomsPerHour(),2,RoundingMode.HALF_UP).add(BigDecimal.valueOf(value(request.juniorRooms())).divide(h.getJuniorRoomsPerHour(),2,RoundingMode.HALF_UP)).add(BigDecimal.valueOf(value(request.presidentRooms())).divide(h.getPresidentRoomsPerHour(),2,RoundingMode.HALF_UP));}
             if (request.quantity() == null || request.quantity() < 1 || type.getRoomsPerHour() == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity is required for room work");
             }
@@ -78,6 +85,8 @@ public class HotelWorkService {
         if (minutes <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be after start time");
         return BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
     }
+    public void readNotification(String username,Long id){Notification n=notifications.findById(id).filter(item->notifications.findTop20ByRecipientUsernameOrderByCreatedAtDesc(username).stream().anyMatch(x->x.getId().equals(item.getId()))).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));n.markRead();}
+    private int value(Integer number){return number==null?0:number;}
 
     private UserAccount user(String username) {
         return users.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
