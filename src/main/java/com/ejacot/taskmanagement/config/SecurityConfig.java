@@ -23,7 +23,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
-                        .requestMatchers("/", "/index.html", "/app.js", "/styles.css", "/favicon.svg").permitAll()
+                        .requestMatchers("/", "/index.html", "/app.js", "/styles.css", "/favicon.svg", "/manifest.webmanifest", "/sw.js").permitAll()
                         .requestMatchers("/actuator/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
@@ -32,10 +32,11 @@ public class SecurityConfig {
 
     @Bean
     UserDetailsService userDetailsService(UserAccountRepository users) {
-        return username -> users.findByUsername(username.toLowerCase())
+        return username -> users.findByLogin(username)
                 .map(user -> User.withUsername(user.getUsername())
                         .password(user.getPassword())
-                        .roles("USER")
+                        .roles(user.getRole().name())
+                        .disabled(!user.isActive())
                         .build())
                 .orElseThrow(() -> new UsernameNotFoundException("Unknown user"));
     }

@@ -1,121 +1,19 @@
-const state = { credentials: sessionStorage.getItem("taskflow.credentials"), username: sessionStorage.getItem("taskflow.username"), tasks: [], filter: "" };
-const $ = (selector) => document.querySelector(selector);
-const $$ = (selector) => [...document.querySelectorAll(selector)];
-
-async function api(path, options = {}) {
-  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
-  if (state.credentials) headers.Authorization = `Basic ${state.credentials}`;
-  const response = await fetch(path, { ...options, headers });
-  if (response.status === 401 && path !== "/api/tasks") logout();
-  if (!response.ok) {
-    let body = {};
-    try { body = await response.json(); } catch (_) { /* empty response */ }
-    const details = body.fields ? Object.values(body.fields).join(" · ") : "";
-    throw new Error(details || body.message || `Cererea a eșuat (${response.status})`);
-  }
-  return response.status === 204 ? null : response.json();
-}
-
-function setSession(username, password) {
-  state.username = username.toLowerCase();
-  state.credentials = btoa(`${state.username}:${password}`);
-  sessionStorage.setItem("taskflow.username", state.username);
-  sessionStorage.setItem("taskflow.credentials", state.credentials);
-}
-
-function logout() {
-  state.credentials = null; state.username = null; state.tasks = [];
-  sessionStorage.clear();
-  $("#app-view").classList.add("hidden"); $("#user-area").classList.add("hidden"); $("#auth-view").classList.remove("hidden");
-}
-
-async function login(username, password) {
-  setSession(username, password);
-  try { await loadTasks(); showApp(); }
-  catch (error) { logout(); throw new Error("Utilizatorul sau parola nu sunt corecte."); }
-}
-
-function showApp() {
-  $("#auth-view").classList.add("hidden"); $("#app-view").classList.remove("hidden"); $("#user-area").classList.remove("hidden");
-  $("#user-label").textContent = `@${state.username}`;
-  render();
-}
-
-async function loadTasks() {
-  const suffix = state.filter ? `?status=${state.filter}&size=100&sort=createdAt,desc` : "?size=100&sort=createdAt,desc";
-  const page = await api(`/api/tasks${suffix}`);
-  state.tasks = page.content;
-  render();
-}
-
-function render() {
-  const labels = { TODO: "De făcut", IN_PROGRESS: "În lucru", DONE: "Finalizat", LOW: "Scăzută", MEDIUM: "Medie", HIGH: "Ridicată" };
-  $("#task-list").innerHTML = state.tasks.map(task => `
-    <article class="task-item status-${task.status}">
-      <button class="status-dot" data-toggle="${task.id}" title="Schimbă statusul" aria-label="Schimbă statusul"></button>
-      <div class="task-content">
-        <h3>${escapeHtml(task.title)}</h3>
-        <div class="task-meta"><span class="priority priority-${task.priority}">${labels[task.priority]}</span>${task.dueDate ? `<span>Termen ${formatDate(task.dueDate)}</span>` : ""}<span>${labels[task.status]}</span></div>
-      </div>
-      <div class="task-actions"><button class="icon-button" data-edit="${task.id}" title="Editează">✎</button><button class="icon-button" data-delete="${task.id}" title="Șterge">×</button></div>
-    </article>`).join("");
-  $("#empty-state").classList.toggle("hidden", state.tasks.length > 0);
-  $("#task-count").textContent = `${state.tasks.length} ${state.tasks.length === 1 ? "task" : "task-uri"}`;
-  $("#stat-total").textContent = state.tasks.length;
-  $("#stat-todo").textContent = state.tasks.filter(t => t.status === "TODO").length;
-  $("#stat-progress").textContent = state.tasks.filter(t => t.status === "IN_PROGRESS").length;
-  $("#stat-done").textContent = state.tasks.filter(t => t.status === "DONE").length;
-}
-
-function escapeHtml(value) { const div = document.createElement("div"); div.textContent = value; return div.innerHTML; }
-function formatDate(value) { return new Intl.DateTimeFormat("ro-RO", { day:"numeric", month:"short" }).format(new Date(`${value}T12:00:00`)); }
-function toast(message) { const element = $("#toast"); element.textContent = message; element.classList.add("show"); setTimeout(() => element.classList.remove("show"), 2300); }
-
-function openTask(task = null) {
-  $("#task-form").reset(); $("#task-error").textContent = "";
-  $("#task-id").value = task?.id || ""; $("#task-title").value = task?.title || ""; $("#task-description").value = task?.description || "";
-  $("#task-priority").value = task?.priority || "MEDIUM"; $("#task-status").value = task?.status || "TODO"; $("#task-due-date").value = task?.dueDate || "";
-  $("#task-status").closest("div").classList.toggle("hidden", !task); $("#dialog-title").textContent = task ? "Editează task-ul" : "Task nou";
-  $("#task-dialog").showModal(); $("#task-title").focus();
-}
-
-$$('.tab').forEach(tab => tab.addEventListener("click", () => {
-  $$('.tab').forEach(item => item.classList.toggle("active", item === tab));
-  const register = tab.dataset.mode === "register";
-  $("#auth-title").textContent = register ? "Creează-ți contul" : "Bine ai revenit";
-  $("#auth-subtitle").textContent = register ? "Durează mai puțin de un minut." : "Intră în cont pentru a-ți vedea task-urile.";
-  $("#auth-submit-label").textContent = register ? "Creează cont" : "Intră în cont";
-  $("#password").autocomplete = register ? "new-password" : "current-password";
-  $("#auth-error").textContent = "";
-}));
-
-$("#auth-form").addEventListener("submit", async event => {
-  event.preventDefault(); const username = $("#username").value.trim(); const password = $("#password").value; const register = $(".tab.active").dataset.mode === "register";
-  $("#auth-error").textContent = "";
-  try { if (register) await api("/api/auth/register", { method:"POST", body:JSON.stringify({ username, password }) }); await login(username, password); toast(register ? "Cont creat. Bine ai venit!" : "Bine ai revenit!"); }
-  catch (error) { $("#auth-error").textContent = error.message; }
-});
-
-$("#logout-button").addEventListener("click", logout);
-$("#new-task-button").addEventListener("click", () => openTask());
-$("#close-dialog").addEventListener("click", () => $("#task-dialog").close());
-$("#cancel-task").addEventListener("click", () => $("#task-dialog").close());
-
-$("#task-form").addEventListener("submit", async event => {
-  event.preventDefault(); const id = $("#task-id").value;
-  const data = { title:$("#task-title").value, description:$("#task-description").value || null, priority:$("#task-priority").value, dueDate:$("#task-due-date").value || null };
-  if (id) data.status = $("#task-status").value;
-  try { await api(id ? `/api/tasks/${id}` : "/api/tasks", { method:id ? "PUT" : "POST", body:JSON.stringify(data) }); $("#task-dialog").close(); await loadTasks(); toast(id ? "Task actualizat" : "Task adăugat"); }
-  catch (error) { $("#task-error").textContent = error.message; }
-});
-
-$("#task-list").addEventListener("click", async event => {
-  const editId = event.target.dataset.edit, deleteId = event.target.dataset.delete, toggleId = event.target.dataset.toggle;
-  if (editId) openTask(state.tasks.find(t => t.id === Number(editId)));
-  if (deleteId && confirm("Ștergi acest task?")) { await api(`/api/tasks/${deleteId}`, { method:"DELETE" }); await loadTasks(); toast("Task șters"); }
-  if (toggleId) { const task = state.tasks.find(t => t.id === Number(toggleId)); const next = { TODO:"IN_PROGRESS", IN_PROGRESS:"DONE", DONE:"TODO" }[task.status]; await api(`/api/tasks/${task.id}`, { method:"PUT", body:JSON.stringify({ ...task, status:next }) }); await loadTasks(); }
-});
-
-$$('.filter').forEach(button => button.addEventListener("click", async () => { $$('.filter').forEach(item => item.classList.toggle("active", item === button)); state.filter = button.dataset.status; await loadTasks(); }));
-
-if (state.credentials) loadTasks().then(showApp).catch(logout);
+const state={auth:sessionStorage.getItem('roomly.auth'),data:null};const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+async function api(path,options={}){const headers={'Content-Type':'application/json',...(options.headers||{})};if(state.auth)headers.Authorization=`Basic ${state.auth}`;const r=await fetch(path,{...options,headers});if(!r.ok){let b={};try{b=await r.json()}catch{}throw new Error(b.message||`Eroare ${r.status}`)}return r.status===204?null:r.json()}
+const money=n=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(n||0);const date=d=>new Intl.DateTimeFormat('ro-RO',{day:'2-digit',month:'short'}).format(new Date(`${d}T12:00:00`));const day=d=>new Intl.DateTimeFormat('ro-RO',{weekday:'short'}).format(new Date(`${d}T12:00:00`)).replace('.','').toUpperCase();const time=t=>t?t.slice(0,5):'—';
+function toast(m){$('#toast').textContent=m;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2200)}
+async function load(){state.data=await api('/api/hotel/bootstrap');render();showApp()}
+function showApp(){$('#login-view').classList.add('hidden');$('#app').classList.remove('hidden')}
+function render(){const d=state.data,m=d.me;$('#hotel-name').textContent=d.hotel.name;$('#hotel-city').textContent=d.hotel.city;$('#first-name').textContent=m.username[0].toUpperCase()+m.username.slice(1);$('#side-name').textContent=m.username;$('#side-role').textContent={EMPLOYEE:'Angajat',MANAGER:'Manager',CHECKER:'Checker',EMPLOYER:'Angajator'}[m.role];$('#today-label').textContent=new Intl.DateTimeFormat('ro-RO',{weekday:'long',day:'numeric',month:'long'}).format(new Date()).toUpperCase();$('#metric-hours').textContent=Number(d.metrics.monthHours).toFixed(1);$('#metric-rooms').textContent=d.metrics.rooms;$('#metric-gross').textContent=money(d.metrics.gross);$('#metric-net').textContent=money(d.metrics.estimatedNet);renderNext();renderPlans();renderLogs();renderSettings();fillTypes()}
+function renderNext(){const p=state.data.plans.find(x=>x.date>=new Date().toISOString().slice(0,10))||state.data.plans[0],el=$('#next-shift');if(!p){el.classList.add('hidden');return}el.querySelector('.shift-date strong').textContent=date(p.date);el.querySelector('.shift-main small').textContent=day(p.date);el.querySelector('.shift-main h3').textContent=p.workType;el.querySelector('.shift-main p').textContent=p.notes||'Plan confirmat';el.querySelector('.shift-time').textContent=`${time(p.startTime)} – ${time(p.endTime)}`}
+function renderPlans(){const html=state.data.plans.map(p=>`<div class="week-row"><div class="week-day"><strong>${date(p.date)}</strong><small>${day(p.date)}</small></div><div class="work-label"><i class="dot" style="background:${p.color}"></i><div><strong>${p.workType}</strong><small>${p.notes||'Planificat'}</small></div></div><span class="week-time">${time(p.startTime)}–${time(p.endTime)}</span></div>`).join('')||'<p class="muted">Nu există planificări.</p>';$('#week-list').innerHTML=html;$('#full-plan').innerHTML=state.data.plans.map(p=>`<article class="plan-card"><div class="week-day"><strong>${date(p.date)}</strong><small>${day(p.date)}</small></div><i class="bar" style="background:${p.color}"></i><div><h3>${p.workType}</h3><p>${p.notes||'Planificat'} · ${p.status}</p></div><span class="week-time">${time(p.startTime)} – ${time(p.endTime)}</span></article>`).join('')||'<p class="muted">Nu există planificări.</p>'}
+function renderLogs(){const rows=state.data.logs;$('#recent-list').innerHTML=rows.slice(0,5).map(l=>`<div class="recent-row"><div><strong>${l.workType}</strong><small>${date(l.date)}${l.quantity?` · ${l.quantity} camere`:''}</small></div><span class="hours">${Number(l.hours).toFixed(2)}h</span></div>`).join('')||'<p class="muted">Nicio activitate.</p>';$('#history-list').innerHTML=rows.map(l=>`<div class="history-row"><span>${date(l.date)}</span><strong>${l.workType}</strong><span>${l.quantity?`${l.quantity} camere`:`${time(l.startTime)}–${time(l.endTime)}`}</span><strong>${Number(l.hours).toFixed(2)} h</strong><span><i class="badge">${{DRAFT:'Ciornă',SUBMITTED:'Trimis',APPROVED:'Aprobat',REJECTED:'Respins'}[l.status]}</i></span></div>`).join('')||'<p class="muted" style="padding:20px">Nicio activitate.</p>'}
+function renderSettings(){const d=state.data;$('#profile-details').innerHTML=`<div><small>Username</small><strong>${d.me.username}</strong></div><div><small>Rol</small><strong>${d.me.role}</strong></div><div><small>Tarif orar</small><strong>${money(d.me.hourlyRate)}</strong></div><div><small>Hotel</small><strong>${d.hotel.name}</strong></div>`;$('#work-types').innerHTML=d.workTypes.map(t=>`<div class="type-item"><i style="background:${t.color}"></i><div><strong>${t.name}</strong><small>${t.unit==='ROOMS'?`${t.roomsPerHour} camere/oră`:'Plată la oră'}</small></div><span>${t.code}</span></div>`).join('')}
+function fillTypes(){$('#work-type').innerHTML=state.data.workTypes.map(t=>`<option value="${t.id}" data-unit="${t.unit}">${t.name}</option>`).join('');toggleFields()}
+function toggleFields(){const o=$('#work-type').selectedOptions[0],rooms=o?.dataset.unit==='ROOMS';$('#room-fields').classList.toggle('hidden',!rooms);$('#hour-fields').classList.toggle('hidden',rooms)}
+function navigate(id){$$('.view').forEach(v=>v.classList.toggle('active-view',v.id===id));$$('.nav').forEach(n=>n.classList.toggle('active',n.dataset.view===id));$('.sidebar').classList.remove('open')}
+$('#login-form').addEventListener('submit',async e=>{e.preventDefault();$('#login-error').textContent='';state.auth=btoa(`${$('#login').value.trim()}:${$('#password').value}`);sessionStorage.setItem('roomly.auth',state.auth);try{await load()}catch(err){state.auth=null;sessionStorage.clear();$('#login-error').textContent='Contul sau parola nu sunt corecte.'}});
+$$('.nav').forEach(n=>n.addEventListener('click',()=>navigate(n.dataset.view)));$$('[data-go]').forEach(n=>n.addEventListener('click',()=>navigate(n.dataset.go)));$('#menu').addEventListener('click',()=>$('.sidebar').classList.toggle('open'));$('#logout').addEventListener('click',()=>{sessionStorage.clear();location.reload()});
+function openLog(){$('#log-form').reset();$('#work-date').value=new Date().toISOString().slice(0,10);$('#log-error').textContent='';fillTypes();$('#log-dialog').showModal()}$$('[data-open-log]').forEach(b=>b.addEventListener('click',openLog));$('#close-dialog').addEventListener('click',()=>$('#log-dialog').close());$('#cancel-dialog').addEventListener('click',()=>$('#log-dialog').close());$('#work-type').addEventListener('change',toggleFields);
+$('#log-form').addEventListener('submit',async e=>{e.preventDefault();const type=state.data.workTypes.find(t=>t.id===Number($('#work-type').value));const body={workTypeId:type.id,workDate:$('#work-date').value,notes:$('#notes').value||null};if(type.unit==='ROOMS'){body.quantity=Number($('#quantity').value);body.roomType=type.code.includes('JUNIOR')?'JUNIOR_SUITE':type.code.includes('PRESIDENT')?'PRESIDENT':'NORMAL'}else{body.startTime=$('#start-time').value;body.endTime=$('#end-time').value;body.breakMinutes=Number($('#break-minutes').value)}try{await api('/api/hotel/logs',{method:'POST',body:JSON.stringify(body)});$('#log-dialog').close();await load();toast('Activitatea a fost salvată')}catch(err){$('#log-error').textContent=err.message}});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');if(state.auth)load().catch(()=>{sessionStorage.clear();state.auth=null});
