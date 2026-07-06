@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Aplicație simplă și sigură pentru organizarea task-urilor.">
+  <title>Taskflow — Task Management</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Manrope:wght@700;800&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="noise"></div>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Taskflow">
+      <span class="brand-mark">✓</span>
+      <span>taskflow</span>
+    </a>
+    <div id="user-area" class="user-area hidden">
+      <span id="user-label"></span>
+      <button id="logout-button" class="button button-ghost">Ieșire</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="auth-view" class="auth-layout">
+      <div class="hero-copy">
+        <p class="eyebrow">MAI PUȚIN HAOS. MAI MULT PROGRES.</p>
+        <h1>Lucrurile importante,<br><em>în ordine.</em></h1>
+        <p class="hero-text">Un spațiu simplu pentru task-urile tale. Fără meniuri inutile, fără distrageri — doar ce ai de făcut.</p>
+        <div class="feature-row">
+          <span><b>01</b> Prioritizează</span>
+          <span><b>02</b> Urmărește</span>
+          <span><b>03</b> Finalizează</span>
+        </div>
+      </div>
+
+      <div class="auth-card">
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-mode="login">Autentificare</button>
+          <button class="tab" data-mode="register">Cont nou</button>
+        </div>
+        <form id="auth-form">
+          <h2 id="auth-title">Bine ai revenit</h2>
+          <p id="auth-subtitle">Intră în cont pentru a-ți vedea task-urile.</p>
+          <label for="username">Utilizator</label>
+          <input id="username" autocomplete="username" minlength="3" maxlength="50" required placeholder="ex: maria.dev">
+          <label for="password">Parolă</label>
+          <input id="password" type="password" autocomplete="current-password" minlength="8" maxlength="72" required placeholder="minimum 8 caractere">
+          <p id="auth-error" class="form-error" role="alert"></p>
+          <button class="button button-primary button-full" type="submit"><span id="auth-submit-label">Intră în cont</span><span>→</span></button>
+        </form>
+      </div>
+    </section>
+
+    <section id="app-view" class="app-view hidden">
+      <div class="dashboard-heading">
+        <div>
+          <p class="eyebrow">SPAȚIUL TĂU DE LUCRU</p>
+          <h1>Ce facem <em>astăzi?</em></h1>
+        </div>
+        <button id="new-task-button" class="button button-primary">+ Task nou</button>
+      </div>
+
+      <div class="stats" aria-label="Statistici">
+        <article><span>Total</span><strong id="stat-total">0</strong></article>
+        <article><span>De făcut</span><strong id="stat-todo">0</strong></article>
+        <article><span>În lucru</span><strong id="stat-progress">0</strong></article>
+        <article><span>Finalizate</span><strong id="stat-done">0</strong></article>
+      </div>
+
+      <div class="task-toolbar">
+        <div class="filters">
+          <button class="filter active" data-status="">Toate</button>
+          <button class="filter" data-status="TODO">De făcut</button>
+          <button class="filter" data-status="IN_PROGRESS">În lucru</button>
+          <button class="filter" data-status="DONE">Finalizate</button>
+        </div>
+        <span id="task-count" class="task-count"></span>
+      </div>
+
+      <div id="task-list" class="task-list"></div>
+      <div id="empty-state" class="empty-state hidden">
+        <span>✓</span>
+        <h3>Lista e liberă</h3>
+        <p>Adaugă primul task și pune lucrurile în mișcare.</p>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="task-dialog">
+    <form id="task-form" method="dialog">
+      <div class="dialog-heading">
+        <div><p class="eyebrow">DETALII</p><h2 id="dialog-title">Task nou</h2></div>
+        <button type="button" id="close-dialog" class="icon-button" aria-label="Închide">×</button>
+      </div>
+      <input id="task-id" type="hidden">
+      <label for="task-title">Titlu</label>
+      <input id="task-title" required maxlength="120" placeholder="Ce trebuie făcut?">
+      <label for="task-description">Descriere</label>
+      <textarea id="task-description" maxlength="1000" rows="4" placeholder="Context sau câteva detalii utile"></textarea>
+      <div class="form-grid">
+        <div><label for="task-priority">Prioritate</label><select id="task-priority"><option value="LOW">Scăzută</option><option value="MEDIUM" selected>Medie</option><option value="HIGH">Ridicată</option></select></div>
+        <div><label for="task-status">Status</label><select id="task-status"><option value="TODO">De făcut</option><option value="IN_PROGRESS">În lucru</option><option value="DONE">Finalizat</option></select></div>
+      </div>
+      <label for="task-due-date">Termen</label>
+      <input id="task-due-date" type="date">
+      <p id="task-error" class="form-error" role="alert"></p>
+      <div class="dialog-actions"><button type="button" id="cancel-task" class="button button-ghost">Renunță</button><button type="submit" class="button button-primary">Salvează task-ul</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>
