@@ -56,6 +56,6 @@ class TaskManagementApiIntegrationTest {
     void webApplicationIsPubliclyAvailable() throws Exception {
         mvc.perform(get("/index.html"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("taskflow")));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("roomly work")));
     }
 }

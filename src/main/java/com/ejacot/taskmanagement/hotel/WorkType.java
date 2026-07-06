@@ -1,0 +1,32 @@
+package com.ejacot.taskmanagement.hotel;
+
+import jakarta.persistence.*;
+import java.math.BigDecimal;
+
+@Entity
+@Table(name = "work_types")
+public class WorkType {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "hotel_id") private Hotel hotel;
+    @Column(nullable = false, length = 30) private String code;
+    @Column(nullable = false, length = 100) private String name;
+    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private WorkUnit unit;
+    @Column(name = "rooms_per_hour", precision = 8, scale = 2) private BigDecimal roomsPerHour;
+    @Column(nullable = false, length = 20) private String color;
+    @Column(nullable = false) private boolean active = true;
+
+    protected WorkType() {}
+    public WorkType(Hotel hotel, String code, String name, WorkUnit unit, BigDecimal roomsPerHour, String color) {
+        this.hotel = hotel; this.code = code; this.name = name; this.unit = unit;
+        this.roomsPerHour = roomsPerHour; this.color = color;
+    }
+    public Long getId() { return id; }
+    public Hotel getHotel() { return hotel; }
+    public String getCode() { return code; }
+    public String getName() { return name; }
+    public WorkUnit getUnit() { return unit; }
+    public BigDecimal getRoomsPerHour() { return roomsPerHour; }
+    public String getColor() { return color; }
+    public boolean isActive() { return active; }
+}
+

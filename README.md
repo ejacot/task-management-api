@@ -1,26 +1,28 @@
-# Task Management API
+# Roomly Work — Hotel Workforce Management
 
-A secure REST API for personal task management, built as a backend engineering portfolio project.
+A full-stack hotel workforce application for weekly planning, room productivity, time tracking and earnings visibility.
 
-It also includes a responsive browser interface, so the repository is a complete application rather than an API-only demo.
+The responsive PWA works on desktop, Android and iOS, backed by a Java 21 / Spring Boot API.
 
 ## Easiest way to start on Windows
 
-Double-click `start-local.cmd`. The script starts the application with a local embedded database and opens:
+Double-click `start-local.cmd`. The script starts the application with demo data and opens:
 
 ```text
 http://localhost:8080
 ```
 
-Create an account in the browser, then add, edit, complete and delete tasks. Data is saved in the local `data` directory. No Docker or PostgreSQL setup is required for this mode. Keep the terminal window open while using the application; close it with `Ctrl+C`.
+Use `mariana` / `demo1234` to explore the employee experience. Data is saved in the local `data` directory. No Docker or PostgreSQL setup is required for this mode.
 
 ## Highlights
 
 - Java 21 and Spring Boot 3
 - PostgreSQL persistence with versioned Flyway migrations
 - Stateless HTTP Basic authentication with BCrypt password hashing
-- Per-user data isolation: users can only access their own tasks
-- CRUD operations, status filtering, pagination, sorting and validation
+- Hotel-scoped access and role-ready users (`EMPLOYER`, `MANAGER`, `CHECKER`, `EMPLOYEE`)
+- Weekly shift plans and configurable hourly/room work types
+- Room-to-hour conversion, time tracking, breaks and approval statuses
+- Monthly hours, room totals, gross and clearly labelled estimated net pay
 - OpenAPI/Swagger documentation
 - Integration tests with MockMvc and H2 in PostgreSQL compatibility mode
 - Docker Compose for a one-command local environment
@@ -59,51 +61,14 @@ To run the complete containerized stack:
 docker compose up --build
 ```
 
-## API example
-
-Register a user:
-
-```bash
-curl -X POST http://localhost:8080/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"demo","password":"change-me-123"}'
-```
-
-Create a task:
-
-```bash
-curl -u demo:change-me-123 -X POST http://localhost:8080/api/tasks \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Prepare technical interview","priority":"HIGH","dueDate":"2026-08-01"}'
-```
-
-List tasks, optionally filtered and paginated:
-
-```bash
-curl -u demo:change-me-123 \
-  "http://localhost:8080/api/tasks?status=TODO&page=0&size=10&sort=dueDate,asc"
-```
-
-Update and delete:
-
-```bash
-curl -u demo:change-me-123 -X PUT http://localhost:8080/api/tasks/1 \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Prepare technical interview","status":"IN_PROGRESS","priority":"HIGH","dueDate":"2026-08-01"}'
-
-curl -u demo:change-me-123 -X DELETE http://localhost:8080/api/tasks/1
-```
-
 ## Main endpoints
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/auth/register` | Register a user |
-| `GET` | `/api/tasks` | List the authenticated user's tasks |
-| `POST` | `/api/tasks` | Create a task |
-| `GET` | `/api/tasks/{id}` | Read one task |
-| `PUT` | `/api/tasks/{id}` | Replace one task |
-| `DELETE` | `/api/tasks/{id}` | Delete one task |
+| `GET` | `/api/hotel/bootstrap` | Load the current hotel, profile, plan, logs and metrics |
+| `POST` | `/api/hotel/logs` | Register hourly or room-based work |
+| `PUT` | `/api/hotel/logs/{id}/submit` | Submit a work entry for approval |
+| `POST` | `/api/auth/register` | Register a basic user account |
 
 ## Tests
 
@@ -111,14 +76,15 @@ curl -u demo:change-me-123 -X DELETE http://localhost:8080/api/tasks/1
 ./mvnw verify
 ```
 
-The integration suite verifies registration, authentication, task lifecycle and rejection of anonymous access.
+The integration suite verifies migrations, authentication, validation and rejection of anonymous access. The UI is also smoke-tested in a real browser at desktop and mobile breakpoints.
 
 ## Future improvements
 
-- JWT access and refresh tokens
-- Optimistic locking for concurrent updates
-- Testcontainers-based PostgreSQL integration tests
-- Rate limiting and audit events
+- Manager planning and employee invitation screens
+- Checker workflow and room-level assignments
+- Effective-dated pay rates, premiums and monthly approval
+- Notification center and queued offline writes
+- German payroll estimation from official, versioned rules
 
 ## License
 
