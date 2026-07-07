@@ -5,6 +5,7 @@ import com.ejacot.taskmanagement.user.*;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.core.annotation.Order;
 
 import java.math.BigDecimal;
 import java.time.*;
@@ -14,6 +15,7 @@ import java.util.List;
 @Profile("local")
 public class DemoDataConfig {
     @Bean
+    @Order(1)
     ApplicationRunner demoData(HotelRepository hotels, UserAccountRepository users,
                                WorkTypeRepository workTypes, ShiftPlanRepository plans,
                                WorkLogRepository logs,PayRateRepository payRates,NotificationRepository notifications, PasswordEncoder encoder) {
@@ -64,4 +66,40 @@ public class DemoDataConfig {
             notifications.save(new Notification(employee,"Planul săptămânii este disponibil","Programul pentru săptămâna curentă a fost publicat.","plan"));
         };
     }
+
+    @Bean
+    @Order(2)
+    ApplicationRunner weeklyTeamDemo(UserAccountRepository users,WorkTypeRepository types,
+                                     ShiftPlanRepository plans,PasswordEncoder encoder){
+        return args->{
+            if(users.findByUsername("imbrea.daniela").isPresent())return;
+            UserAccount mariana=users.findByUsername("mariana").orElseThrow();
+            Hotel hotel=mariana.getHotel();
+            WorkType ch=type(types,hotel,"CH","Checker / CH","#af52de");
+            WorkType pf=type(types,hotel,"PF","Public Früh","#34c759");
+            WorkType ps=type(types,hotel,"PS","Public Spät","#007aff");
+            WorkType tk=type(types,hotel,"TK","Tageskraft","#ff9500");
+            WorkType hd=type(types,hotel,"HD","Housekeeping Dienst","#ff3b30");
+            WorkType spa=type(types,hotel,"SPA","SPA","#b38b00");
+            WorkType obj=type(types,hotel,"OBJ","Objektleitung","#5856d6");
+            WorkType tlw=type(types,hotel,"TLW","Teilwäsche","#5ac8fa");
+            String[][] people={{"imbrea.daniela","Daniela","Imbrea"},{"cosaru.sebastian","Sebastian","Cosaru"},{"lazar.daniel","Daniel","Lazar"},{"amza.razvan","Razvan","Amza"},{"cosaru.cristina","Cristina","Cosaru"},{"ungureanu.valerica","Valerica","Ungureanu"},{"mitrea.iulian","Iulian","Mitrea"},{"mitrea.corina","Corina","Mitrea"},{"mircea.lucian","Lucian","Mircea"},{"jacot.victor","Victor","Jacot"},{"chiorpec.gertrud","Gertrud","Chiorpec"},{"balan.bianca","Bianca","Balan"},{"stancu.marian","Marian","Stancu"},{"puie.liviu","Liviu","Puie"},{"ghitescu.adrian","Adrian","Ghitescu"},{"nechita.denia","Denisa","Nechita"},{"toma.adriana","Adriana","Toma"},{"toma.viorel","Viorel","Toma"},{"lepadatu.cristian","Cristian","Lepadatu"},{"cortel.florentina","Florentina","Cortel"}};
+            List<UserAccount> team=new java.util.ArrayList<>();
+            for(int i=0;i<people.length;i++){
+                String[] p=people[i];UserAccount u=new UserAccount(p[0],encoder.encode("demo1234"),p[0]+"@example.com","+49152000"+String.format("%04d",i),UserRole.EMPLOYEE,new BigDecimal("16.00"),hotel);u.configureProfile(p[1],p[2],"Unterschleißheim, Germania",1);team.add(users.save(u));
+            }
+            LocalDate monday=LocalDate.now().minusDays(LocalDate.now().getDayOfWeek().getValue()-1L);
+            plans.deleteAll(plans.findAllByHotelIdAndWorkDateBetweenOrderByWorkDateAscStartTimeAsc(hotel.getId(),monday,monday.plusDays(6)));
+            WorkType[] rotation={pf,ps,tk,hd,spa,obj,tlw};
+            for(int i=0;i<team.size();i++)for(int d=0;d<7;d++){
+                UserAccount u=team.get(i);LocalDate date=monday.plusDays(d);
+                if((i+d)%9==0)plans.save(new ShiftPlan(u,hotel,null,date,null,null,null,ShiftKind.VACATION));
+                else if((i+d)%6==0)plans.save(new ShiftPlan(u,hotel,null,date,null,null,null,ShiftKind.FREE));
+                else{WorkType t=rotation[i%rotation.length];LocalTime start=t==pf?LocalTime.of(5,0):t==ps?LocalTime.of(13,30):t==tk?LocalTime.of(10,0):t==spa?LocalTime.of(12,0):LocalTime.of(9,0);plans.save(new ShiftPlan(u,hotel,t,date,start,start.plusHours(8).plusMinutes(30),null));}
+            }
+            for(int d=0;d<7;d++)plans.save(new ShiftPlan(mariana,hotel,ch,monday.plusDays(d),d<5?LocalTime.of(9,0):LocalTime.of(10,0),d<5?LocalTime.of(17,30):LocalTime.of(18,30),d<5?"CH":"Liste + CH"));
+        };
+    }
+
+    private WorkType type(WorkTypeRepository repo,Hotel hotel,String code,String name,String color){return repo.findByHotelIdAndCode(hotel.getId(),code).orElseGet(()->repo.save(new WorkType(hotel,code,name,WorkUnit.HOURLY,null,color)));}
 }
