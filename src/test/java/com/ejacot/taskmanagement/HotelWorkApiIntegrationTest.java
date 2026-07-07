@@ -26,8 +26,10 @@ class HotelWorkApiIntegrationTest {
                 .andExpect(jsonPath("$.me.hourlyRate").value(17.25))
                 .andReturn().getResponse().getContentAsString();
 
-        long roomTypeId = new com.fasterxml.jackson.databind.ObjectMapper().readTree(body)
-                .get("workTypes").get(0).get("id").asLong();
+        var workTypes = new com.fasterxml.jackson.databind.ObjectMapper().readTree(body).get("workTypes");
+        long roomTypeId = java.util.stream.StreamSupport.stream(workTypes.spliterator(), false)
+                .filter(type -> "ROOMS".equals(type.get("unit").asText()))
+                .findFirst().orElseThrow().get("id").asLong();
 
         String logBody = mvc.perform(post("/api/hotel/logs")
                         .with(httpBasic("mariana", "demo1234"))

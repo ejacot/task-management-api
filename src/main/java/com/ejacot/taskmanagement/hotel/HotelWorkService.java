@@ -33,6 +33,7 @@ public class HotelWorkService {
         LocalDate today = LocalDate.now();
         LocalDate monthStart = today.withDayOfMonth(1);
         List<WorkLog> monthLogs = logs.findAllByEmployeeUsernameAndWorkDateBetweenOrderByWorkDateDesc(username, monthStart, today);
+        List<WorkLog> historyLogs = logs.findAllByEmployeeUsernameOrderByWorkDateDesc(username);
         BigDecimal hours = monthLogs.stream().map(WorkLog::getCalculatedHours).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal rate=payRates.findFirstByEmployeeUsernameAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(username,today).map(PayRate::getHourlyRate).orElse(user.getHourlyRate());
         BigDecimal gross = hours.multiply(rate).setScale(2, RoundingMode.HALF_UP);
@@ -43,7 +44,7 @@ public class HotelWorkService {
                 new HotelDtos.HotelView(user.getHotel().getId(), user.getHotel().getName(), user.getHotel().getCity(),user.getHotel().getNormalRoomsPerHour(),user.getHotel().getJuniorRoomsPerHour(),user.getHotel().getPresidentRoomsPerHour()),
                 workTypes.findAllByHotelIdAndActiveTrueOrderByName(user.getHotel().getId()).stream().map(HotelDtos.WorkTypeView::from).toList(),
                 plans.findAllByEmployeeUsernameAndWorkDateBetweenOrderByWorkDateAscStartTimeAsc(username, weekStart, weekStart.plusDays(13)).stream().map(HotelDtos.PlanView::from).toList(),
-                monthLogs.stream().map(HotelDtos.LogView::from).toList(),
+                historyLogs.stream().map(HotelDtos.LogView::from).toList(),
                 notifications.findTop20ByRecipientUsernameOrderByCreatedAtDesc(username).stream().map(HotelDtos.NotificationView::from).toList(),
                 new HotelDtos.Metrics(hours, gross, estimatedNet, monthLogs.stream().mapToInt(log -> log.getQuantity() == null ? 0 : log.getQuantity()).sum())
         );

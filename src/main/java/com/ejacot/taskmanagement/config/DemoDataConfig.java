@@ -1,9 +1,12 @@
 package com.ejacot.taskmanagement.config;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ejacot.taskmanagement.hotel.*;
 import com.ejacot.taskmanagement.user.*;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.*;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.core.annotation.Order;
 
@@ -100,6 +103,33 @@ public class DemoDataConfig {
             for(int d=0;d<7;d++)plans.save(new ShiftPlan(mariana,hotel,ch,monday.plusDays(d),d<5?LocalTime.of(9,0):LocalTime.of(10,0),d<5?LocalTime.of(17,30):LocalTime.of(18,30),d<5?"CH":"Liste + CH"));
         };
     }
+
+    @Bean
+    @Order(3)
+    ApplicationRunner marianaHistory2025(UserAccountRepository users, WorkTypeRepository types,
+                                         WorkLogRepository logs, ObjectMapper objectMapper) {
+        return args -> {
+            String marker = "Import Excel Mariana 2025";
+            if (logs.existsByEmployeeUsernameAndNotesContaining("mariana", marker)) return;
+            UserAccount mariana = users.findByUsername("mariana").orElseThrow();
+            UserAccount reviewer = users.findByUsername("manager").orElseThrow();
+            Hotel hotel = mariana.getHotel();
+            try (var input = new ClassPathResource("demo/mariana-2025-history.json").getInputStream()) {
+                List<HistoryEntry> entries = objectMapper.readValue(input, new TypeReference<>() {});
+                for (HistoryEntry entry : entries) {
+                    WorkType workType = type(types, hotel, entry.code(), entry.taskName(), "#667085");
+                    WorkLog log = new WorkLog(mariana, hotel, workType, entry.date(), entry.startTime(),
+                            entry.endTime(), 0, null, null, entry.hours(), entry.notes());
+                    log.submit();
+                    log.review(reviewer, true, null);
+                    logs.save(log);
+                }
+            }
+        };
+    }
+
+    private record HistoryEntry(LocalDate date, String code, String taskName, BigDecimal hours,
+                                LocalTime startTime, LocalTime endTime, String notes) {}
 
     private WorkType type(WorkTypeRepository repo,Hotel hotel,String code,String name,String color){return repo.findByHotelIdAndCode(hotel.getId(),code).orElseGet(()->repo.save(new WorkType(hotel,code,name,WorkUnit.HOURLY,null,color)));}
 }
