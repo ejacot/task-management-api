@@ -128,6 +128,32 @@ public class DemoDataConfig {
         };
     }
 
+    @Bean
+    @Order(4)
+    ApplicationRunner marianaHistory2026(UserAccountRepository users, WorkTypeRepository types,
+                                         WorkLogRepository logs, ObjectMapper objectMapper) {
+        return args -> {
+            String marker = "Import Excel Mariana 2026";
+            if (logs.existsByEmployeeUsernameAndNotesContaining("mariana", marker)) return;
+            UserAccount mariana = users.findByUsername("mariana").orElseThrow();
+            UserAccount reviewer = users.findByUsername("manager").orElseThrow();
+            Hotel hotel = mariana.getHotel();
+            logs.deleteAll(logs.findAllByEmployeeUsernameAndWorkDateBetweenOrderByWorkDateDesc(
+                    "mariana", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)));
+            try (var input = new ClassPathResource("demo/mariana-2026-history.json").getInputStream()) {
+                List<HistoryEntry> entries = objectMapper.readValue(input, new TypeReference<>() {});
+                for (HistoryEntry entry : entries) {
+                    WorkType workType = type(types, hotel, entry.code(), entry.taskName(), "#1768e5");
+                    WorkLog log = new WorkLog(mariana, hotel, workType, entry.date(), entry.startTime(),
+                            entry.endTime(), 0, null, null, entry.hours(), entry.notes());
+                    log.submit();
+                    log.review(reviewer, true, null);
+                    logs.save(log);
+                }
+            }
+        };
+    }
+
     private record HistoryEntry(LocalDate date, String code, String taskName, BigDecimal hours,
                                 LocalTime startTime, LocalTime endTime, String notes) {}
 
