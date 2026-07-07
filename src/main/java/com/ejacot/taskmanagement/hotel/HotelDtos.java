@@ -19,7 +19,7 @@ public final class HotelDtos {
     }
     public record PlanView(Long id, Long employeeId,String employee, LocalDate date, LocalTime startTime, LocalTime endTime,
                            String workType, String color, ShiftKind kind, PlanStatus status, String notes) {
-        static PlanView from(ShiftPlan p) { return new PlanView(p.getId(),p.getEmployee().getId(),p.getEmployee().getUsername(),p.getWorkDate(), p.getStartTime(), p.getEndTime(), p.getWorkType()==null?null:p.getWorkType().getName(), p.getWorkType()==null?"#9aa29f":p.getWorkType().getColor(),p.getKind(), p.getStatus(), p.getNotes()); }
+        static PlanView from(ShiftPlan p) { String name=java.util.stream.Stream.of(p.getEmployee().getFirstName(),p.getEmployee().getLastName()).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.joining(" "));return new PlanView(p.getId(),p.getEmployee().getId(),name.isBlank()?p.getEmployee().getUsername():name,p.getWorkDate(), p.getStartTime(), p.getEndTime(), p.getWorkType()==null?null:p.getWorkType().getName(), p.getWorkType()==null?"#9aa29f":p.getWorkType().getColor(),p.getKind(), p.getStatus(), p.getNotes()); }
     }
     public record LogView(Long id,String employee, LocalDate date, LocalTime startTime, LocalTime endTime, int breakMinutes,
                           String workType, WorkUnit unit, RoomType roomType, Integer quantity,

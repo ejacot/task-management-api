@@ -7,7 +7,7 @@ import java.util.List;
 
 public final class ManagementDtos{
  private ManagementDtos(){}
- public record EmployeeView(Long id,String username,String role){ }
+ public record EmployeeView(Long id,String username,String displayName,String role){ }
  public record Overview(List<EmployeeView> employees,List<HotelDtos.PlanView> plans,List<HotelDtos.LogView> pendingLogs){}
  public record PlanRequest(@NotEmpty List<Long> employeeIds,Long workTypeId,@NotNull LocalDate date,LocalTime startTime,LocalTime endTime,@NotNull ShiftKind kind,@Size(max=500) String notes){}
  public record UpdatePlanRequest(Long workTypeId,@NotNull LocalDate date,LocalTime startTime,LocalTime endTime,@NotNull ShiftKind kind,@Size(max=500) String notes){}
