@@ -2,6 +2,7 @@ package com.ejacot.taskmanagement.hotel;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "work_types")
@@ -14,6 +15,9 @@ public class WorkType {
     @Column(name = "rooms_per_hour", precision = 8, scale = 2) private BigDecimal roomsPerHour;
     @Column(nullable = false, length = 20) private String color;
     @Column(nullable = false) private boolean active = true;
+    @Column(name="default_start_time") private LocalTime defaultStartTime;
+    @Column(name="default_end_time") private LocalTime defaultEndTime;
+    @Column(name="default_break_minutes",nullable=false) private int defaultBreakMinutes;
 
     protected WorkType() {}
     public WorkType(Hotel hotel, String code, String name, WorkUnit unit, BigDecimal roomsPerHour, String color) {
@@ -28,5 +32,7 @@ public class WorkType {
     public BigDecimal getRoomsPerHour() { return roomsPerHour; }
     public String getColor() { return color; }
     public boolean isActive() { return active; }
+    public LocalTime getDefaultStartTime(){return defaultStartTime;} public LocalTime getDefaultEndTime(){return defaultEndTime;} public int getDefaultBreakMinutes(){return defaultBreakMinutes;}
+    public void configureDefaults(LocalTime start,LocalTime end,int breakMinutes){this.defaultStartTime=start;this.defaultEndTime=end;this.defaultBreakMinutes=breakMinutes;}
 }
 

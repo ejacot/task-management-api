@@ -10,12 +10,12 @@ public final class HotelDtos {
     private HotelDtos() {}
     public record Bootstrap(Me me, HotelView hotel, List<WorkTypeView> workTypes,
                             List<PlanView> plans, List<LogView> logs, List<NotificationView> notifications, Metrics metrics) {}
-    public record Me(Long id, String username, String email, String phone, UserRole role, BigDecimal hourlyRate) {
-        static Me from(UserAccount u) { return new Me(u.getId(), u.getUsername(), u.getEmail(), u.getPhone(), u.getRole(), u.getHourlyRate()); }
+    public record Me(Long id, String username,String firstName,String lastName, String email, String phone,String address,Integer steuerClass, UserRole role, BigDecimal hourlyRate) {
+        static Me from(UserAccount u) { return new Me(u.getId(), u.getUsername(),u.getFirstName(),u.getLastName(), u.getEmail(), u.getPhone(),u.getAddress(),u.getSteuerClass(), u.getRole(), u.getHourlyRate()); }
     }
-    public record HotelView(Long id, String name, String city) {}
-    public record WorkTypeView(Long id, String code, String name, WorkUnit unit, BigDecimal roomsPerHour, String color) {
-        static WorkTypeView from(WorkType t) { return new WorkTypeView(t.getId(), t.getCode(), t.getName(), t.getUnit(), t.getRoomsPerHour(), t.getColor()); }
+    public record HotelView(Long id, String name, String city,BigDecimal normalRoomsPerHour,BigDecimal juniorRoomsPerHour,BigDecimal presidentRoomsPerHour) {}
+    public record WorkTypeView(Long id, String code, String name, WorkUnit unit, BigDecimal roomsPerHour, String color,LocalTime defaultStartTime,LocalTime defaultEndTime,int defaultBreakMinutes) {
+        static WorkTypeView from(WorkType t) { return new WorkTypeView(t.getId(), t.getCode(), t.getName(), t.getUnit(), t.getRoomsPerHour(), t.getColor(),t.getDefaultStartTime(),t.getDefaultEndTime(),t.getDefaultBreakMinutes()); }
     }
     public record PlanView(Long id, Long employeeId,String employee, LocalDate date, LocalTime startTime, LocalTime endTime,
                            String workType, String color, ShiftKind kind, PlanStatus status, String notes) {

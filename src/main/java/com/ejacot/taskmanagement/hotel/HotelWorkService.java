@@ -40,7 +40,7 @@ public class HotelWorkService {
         LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1L);
         return new HotelDtos.Bootstrap(
                 HotelDtos.Me.from(user),
-                new HotelDtos.HotelView(user.getHotel().getId(), user.getHotel().getName(), user.getHotel().getCity()),
+                new HotelDtos.HotelView(user.getHotel().getId(), user.getHotel().getName(), user.getHotel().getCity(),user.getHotel().getNormalRoomsPerHour(),user.getHotel().getJuniorRoomsPerHour(),user.getHotel().getPresidentRoomsPerHour()),
                 workTypes.findAllByHotelIdAndActiveTrueOrderByName(user.getHotel().getId()).stream().map(HotelDtos.WorkTypeView::from).toList(),
                 plans.findAllByEmployeeUsernameAndWorkDateBetweenOrderByWorkDateAscStartTimeAsc(username, weekStart, weekStart.plusDays(13)).stream().map(HotelDtos.PlanView::from).toList(),
                 monthLogs.stream().map(HotelDtos.LogView::from).toList(),
