@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/management.css">
   <link rel="stylesheet" href="/employee.css">
   <link rel="stylesheet" href="/reference-theme.css">
-  <link rel="stylesheet" href="/annual-chart.css">
+  <link rel="stylesheet" href="/annual-chart.css?v=3">
 </head>
 <body>
   <section id="login-view" class="login-view">
@@ -43,5 +43,5 @@
   <dialog id="plan-dialog"><form id="plan-form"><div class="dialog-head"><div><p class="kicker">PLANIFICARE</p><h2>Adaugă în plan</h2></div><button type="button" id="close-plan">×</button></div><label>Angajați</label><div id="employee-checks" class="employee-checks"></div><label>Tipul zilei</label><select id="shift-kind"><option value="WORK">Activitate</option><option value="FREE">Liber (F)</option><option value="VACATION">Concediu (U)</option><option value="SICK">Medical (K)</option></select><div id="plan-work-fields"><label>Activitate</label><select id="plan-work-type"></select><div class="field-grid"><div><label>De la</label><input id="plan-start" type="time"></div><div><label>Până la</label><input id="plan-end" type="time"></div></div></div><label>Data</label><input id="plan-date" type="date" required><label>Observații</label><textarea id="plan-notes" rows="2"></textarea><p id="plan-error" class="error"></p><div class="dialog-actions"><button type="button" id="cancel-plan" class="btn ghost">Renunță</button><button type="submit" class="btn primary">Publică planul</button></div></form></dialog>
 
   <dialog id="notifications-dialog"><div class="dialog-head"><div><p class="kicker">ACTUALIZĂRI</p><h2>Notificări</h2></div><button type="button" id="close-notifications">×</button></div><div id="notifications-list" class="notification-list"></div></dialog>
-  <div id="toast" class="toast"></div><script src="/app.js" defer></script><script src="/annual-chart.js" defer></script>
+  <div id="toast" class="toast"></div><script src="/annual-chart.js?v=4" defer></script><script src="/app.js?v=4" defer></script>
 </body></html>
