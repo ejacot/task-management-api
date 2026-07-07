@@ -28,6 +28,7 @@ public class DemoDataConfig {
             Hotel hotel = hotels.save(new Hotel("Infinity Hotel", "Unterschleißheim"));
             UserAccount employee = users.save(new UserAccount("mariana", encoder.encode("demo1234"),
                     "mariana@example.com", "+4915112345678", UserRole.EMPLOYEE, new BigDecimal("17.25"), hotel));
+            employee.configureProfile("Mariana","Jacot","Unterschleißheim, Germania",1);
             users.save(new UserAccount("manager", encoder.encode("manager1234"),
                     "manager@example.com", "+4915198765432", UserRole.MANAGER, BigDecimal.ZERO, hotel));
             users.save(new UserAccount("checker",encoder.encode("checker1234"),"checker@example.com","+4915100000003",UserRole.CHECKER,BigDecimal.ZERO,hotel));
@@ -38,6 +39,7 @@ public class DemoDataConfig {
             WorkType junior = workTypes.save(new WorkType(hotel, "ROOM_JUNIOR", "Junior Suite", WorkUnit.ROOMS, new BigDecimal("1.60"), "#B67A2D"));
             WorkType president = workTypes.save(new WorkType(hotel, "ROOM_PRESIDENT", "President Suite", WorkUnit.ROOMS, new BigDecimal("1.20"), "#7D5BA6"));
             WorkType publicArea = workTypes.save(new WorkType(hotel, "PUBLIC", "Public Area", WorkUnit.HOURLY, null, "#3B6EA8"));
+            publicArea.configureDefaults(LocalTime.of(5,0),LocalTime.of(13,30),30);
             WorkType housekeeping = workTypes.save(new WorkType(hotel, "HSK", "Housekeeping", WorkUnit.HOURLY, null, "#D05D4E"));
 
             LocalDate today = LocalDate.now();

@@ -25,6 +25,11 @@ public class UserAccount {
     @Column(unique = true, length = 30)
     private String phone;
 
+    @Column(name="first_name",length=80) private String firstName;
+    @Column(name="last_name",length=80) private String lastName;
+    @Column(length=255) private String address;
+    @Column(name="steuer_class") private Integer steuerClass;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private UserRole role = UserRole.EMPLOYEE;
@@ -65,9 +70,11 @@ public class UserAccount {
     public String getPassword() { return password; }
     public String getEmail() { return email; }
     public String getPhone() { return phone; }
+    public String getFirstName(){return firstName;} public String getLastName(){return lastName;} public String getAddress(){return address;} public Integer getSteuerClass(){return steuerClass;}
     public UserRole getRole() { return role; }
     public BigDecimal getHourlyRate() { return hourlyRate; }
     public boolean isActive() { return active; }
     public Hotel getHotel() { return hotel; }
     public Instant getCreatedAt() { return createdAt; }
+    public void configureProfile(String firstName,String lastName,String address,Integer steuerClass){this.firstName=firstName;this.lastName=lastName;this.address=address;this.steuerClass=steuerClass;}
 }
