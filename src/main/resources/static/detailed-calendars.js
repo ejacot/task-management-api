@@ -27,6 +27,7 @@
   function renderHistory(direction='forward'){
     const year=historyDate.getFullYear(),month=historyDate.getMonth(),first=new Date(year,month,1,12),daysInMonth=new Date(year,month+1,0).getDate(),leading=(first.getDay()+6)%7;
     $('#history-month-label').textContent=new Intl.DateTimeFormat('ro-RO',{month:'long',year:'numeric'}).format(first);
+    if($('#history-month-picker'))$('#history-month-picker').value=`${year}-${String(month+1).padStart(2,'0')}`;
     const weekdayHeaders=['Lun','Mar','Mie','Joi','Vin','Sâm','Dum'].map(day=>`<span>${day}</span>`).join('');
     const blanks=Array.from({length:leading},()=>'<div class="month-day outside"></div>').join('');
     const days=Array.from({length:daysInMonth},(_,index)=>{
@@ -43,11 +44,13 @@
 
   function createControls(){
     const planHead=$('#plan .page-head>div');planHead.querySelector('h1').id='plan-week-title';planHead.querySelector('.muted').textContent='Programul tău, organizat pe săptămâni.';
-    $('#plan .page-head').insertAdjacentHTML('beforeend','<div class="calendar-nav"><button id="plan-prev" aria-label="Săptămâna anterioară">‹</button><strong id="plan-week-label"></strong><button id="plan-next" aria-label="Săptămâna următoare">›</button></div>');
-    const historyTable=$('#history .table-card');historyTable.insertAdjacentHTML('beforebegin','<div class="history-calendar-nav"><button id="history-prev" aria-label="Luna anterioară">‹</button><strong id="history-month-label"></strong><button id="history-next" aria-label="Luna următoare">›</button></div>');historyTable.insertAdjacentElement('afterend',$('#history .annual-card'));
-    $('#plan-prev').addEventListener('click',()=>changePlan(-1));$('#plan-next').addEventListener('click',()=>changePlan(1));$('#history-prev').addEventListener('click',()=>changeHistory(-1));$('#history-next').addEventListener('click',()=>changeHistory(1));
+    $('#plan .page-head').insertAdjacentHTML('beforeend','<div class="calendar-nav"><button type="button" id="plan-prev" aria-label="Săptămâna anterioară">‹</button><strong id="plan-week-label"></strong><button type="button" id="plan-next" aria-label="Săptămâna următoare">›</button></div>');
+    const historyTable=$('#history .table-card');historyTable.insertAdjacentHTML('beforebegin','<div class="history-calendar-nav"><button type="button" id="history-prev" aria-label="Luna anterioară">‹</button><strong id="history-month-label"></strong><input id="history-month-picker" type="month" aria-label="Alege luna"><button type="button" id="history-next" aria-label="Luna următoare">›</button></div>');historyTable.insertAdjacentElement('afterend',$('#history .annual-card'));
     const plan=$('#full-plan'),history=$('#history .table-card');plan.addEventListener('pointerdown',event=>planStartX=event.clientX);plan.addEventListener('pointerup',event=>{if(planStartX===null)return;const d=event.clientX-planStartX;planStartX=null;if(d<-55)changePlan(1);if(d>55)changePlan(-1)});history.addEventListener('pointerdown',event=>historyStartX=event.clientX);history.addEventListener('pointerup',event=>{if(historyStartX===null)return;const d=event.clientX-historyStartX;historyStartX=null;if(d<-55)changeHistory(1);if(d>55)changeHistory(-1)});
   }
+
+  document.addEventListener('click',event=>{const button=event.target.closest('button');if(!button)return;if(button.id==='plan-prev')changePlan(-1);if(button.id==='plan-next')changePlan(1);if(button.id==='history-prev')changeHistory(-1);if(button.id==='history-next')changeHistory(1)});
+  document.addEventListener('change',event=>{if(event.target.id!=='history-month-picker'||!event.target.value)return;const [year,month]=event.target.value.split('-').map(Number);historyDate=new Date(year,month-1,1,12);renderHistory()});
 
   window.setupDetailedCalendars=bootstrap=>{data=bootstrap;if(!$('#plan-prev'))createControls();renderPlan();renderHistory()};
 })();
