@@ -24,8 +24,8 @@ public final class HotelDtos {
     public record LogView(Long id,String employee, LocalDate date, LocalTime startTime, LocalTime endTime, int breakMinutes,
                           String workType, WorkUnit unit, RoomType roomType, Integer quantity,
                           int normalRooms,int juniorRooms,int presidentRooms,boolean hasAttachment,String attachmentName,
-                          BigDecimal hours, LogStatus status, String rejectionReason,String notes) {
-        static LogView from(WorkLog l) { return new LogView(l.getId(),l.getEmployee().getUsername(),l.getWorkDate(),l.getStartTime(),l.getEndTime(),l.getBreakMinutes(),l.getWorkType().getName(),l.getWorkType().getUnit(),l.getRoomType(),l.getQuantity(),l.getNormalRooms(),l.getJuniorRooms(),l.getPresidentRooms(),l.hasAttachment(),l.getAttachmentName(),l.getCalculatedHours(),l.getStatus(),l.getRejectionReason(),l.getNotes()); }
+                          BigDecimal hours, LogStatus status, String rejectionReason,String notes,Long shiftPlanId) {
+        static LogView from(WorkLog l) { return new LogView(l.getId(),l.getEmployee().getUsername(),l.getWorkDate(),l.getStartTime(),l.getEndTime(),l.getBreakMinutes(),l.getWorkType().getName(),l.getWorkType().getUnit(),l.getRoomType(),l.getQuantity(),l.getNormalRooms(),l.getJuniorRooms(),l.getPresidentRooms(),l.hasAttachment(),l.getAttachmentName(),l.getCalculatedHours(),l.getStatus(),l.getRejectionReason(),l.getNotes(),l.getShiftPlan()==null?null:l.getShiftPlan().getId()); }
     }
     public record Metrics(BigDecimal monthHours, BigDecimal gross, BigDecimal estimatedNet, int rooms) {}
     public record CreateLog(
@@ -42,6 +42,9 @@ public final class HotelDtos {
             @Size(max=255) String attachmentName,
             String attachmentData,
             @Size(max = 500) String notes) {}
+    public record CorrectPlannedLog(@NotNull LocalTime startTime,@NotNull LocalTime endTime,
+                                    @Min(0) @Max(180) Integer breakMinutes,
+                                    @NotBlank @Size(max=500) String reason) {}
     public record NotificationView(Long id,String title,String message,String link,boolean read,Instant createdAt){static NotificationView from(Notification n){return new NotificationView(n.getId(),n.getTitle(),n.getMessage(),n.getLink(),n.isRead(),n.getCreatedAt());}}
 }
 

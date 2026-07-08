@@ -154,6 +154,12 @@ public class DemoDataConfig {
         };
     }
 
+    @Bean
+    @Order(5)
+    ApplicationRunner plannedLogsDemo(ShiftPlanRepository plans,PlanLogService planLogs){
+        return args->{LocalDate today=LocalDate.now();plans.findAll().stream().filter(plan->!plan.getWorkDate().isBefore(today)).map(ShiftPlan::getId).forEach(planLogs::ensureForId);};
+    }
+
     private record HistoryEntry(LocalDate date, String code, String taskName, BigDecimal hours,
                                 LocalTime startTime, LocalTime endTime, String notes) {}
 

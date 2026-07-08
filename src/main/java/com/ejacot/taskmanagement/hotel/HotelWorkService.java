@@ -20,10 +20,11 @@ public class HotelWorkService {
     private final WorkLogRepository logs;
     private final NotificationRepository notifications;
     private final PayRateRepository payRates;
+    private final PlanLogService planLogs;
 
     public HotelWorkService(UserAccountRepository users, WorkTypeRepository workTypes,
-                            ShiftPlanRepository plans, WorkLogRepository logs,NotificationRepository notifications,PayRateRepository payRates) {
-        this.users = users; this.workTypes = workTypes; this.plans = plans; this.logs = logs;this.notifications=notifications;this.payRates=payRates;
+                            ShiftPlanRepository plans, WorkLogRepository logs,NotificationRepository notifications,PayRateRepository payRates,PlanLogService planLogs) {
+        this.users = users; this.workTypes = workTypes; this.plans = plans; this.logs = logs;this.notifications=notifications;this.payRates=payRates;this.planLogs=planLogs;
     }
 
     @Transactional(readOnly = true)
@@ -66,6 +67,16 @@ public class HotelWorkService {
         WorkLog log = logs.findByIdAndEmployeeUsername(id, username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Work log not found"));
         log.submit();
+        return HotelDtos.LogView.from(log);
+    }
+
+    public HotelDtos.LogView correctPlannedLog(String username,Long id,HotelDtos.CorrectPlannedLog request){
+        WorkLog log=logs.findByIdAndEmployeeUsername(id,username).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"Work log not found"));
+        if(log.getShiftPlan()==null)throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Activitatea nu provine din plan");
+        int breakMinutes=log.getWorkType().getUnit()==WorkUnit.ROOMS?0:(request.breakMinutes()==null?0:request.breakMinutes());
+        BigDecimal hours;
+        try{hours=planLogs.hours(request.startTime(),request.endTime(),breakMinutes);}catch(IllegalArgumentException ex){throw new ResponseStatusException(HttpStatus.BAD_REQUEST,ex.getMessage());}
+        log.requestCorrection(request.startTime(),request.endTime(),breakMinutes,hours,request.reason());
         return HotelDtos.LogView.from(log);
     }
 

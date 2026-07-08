@@ -64,4 +64,42 @@ class HotelWorkApiIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$[0].kind").value("VACATION"));
     }
+
+    @Test
+    void plannedWorkBecomesApprovedLogAndOnlyCorrectionsNeedReview() throws Exception {
+        var mapper=new com.fasterxml.jackson.databind.ObjectMapper();
+        var bootstrap=mapper.readTree(mvc.perform(get("/api/hotel/bootstrap").with(httpBasic("mariana","demo1234"))).andReturn().getResponse().getContentAsString());
+        long employeeId=bootstrap.get("me").get("id").asLong();
+        long hourlyTypeId=java.util.stream.StreamSupport.stream(bootstrap.get("workTypes").spliterator(),false)
+                .filter(type->"HOURLY".equals(type.get("unit").asText())).findFirst().orElseThrow().get("id").asLong();
+        var plan=mapper.readTree(mvc.perform(post("/api/management/plans").with(httpBasic("manager","manager1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"employeeIds":[%d],"workTypeId":%d,"date":"2026-08-20","startTime":"09:00","endTime":"17:30","kind":"WORK"}
+                        """.formatted(employeeId,hourlyTypeId)))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString()).get(0);
+        long planId=plan.get("id").asLong();
+        var afterPlan=mapper.readTree(mvc.perform(get("/api/hotel/bootstrap").with(httpBasic("mariana","demo1234"))).andReturn().getResponse().getContentAsString());
+        var plannedLog=java.util.stream.StreamSupport.stream(afterPlan.get("logs").spliterator(),false)
+                .filter(log->log.hasNonNull("shiftPlanId")&&log.get("shiftPlanId").asLong()==planId).findFirst().orElseThrow();
+        long logId=plannedLog.get("id").asLong();
+        org.assertj.core.api.Assertions.assertThat(plannedLog.get("status").asText()).isEqualTo("APPROVED");
+        org.assertj.core.api.Assertions.assertThat(plannedLog.get("hours").decimalValue()).isEqualByComparingTo("8.00");
+
+        mvc.perform(put("/api/hotel/logs/{id}/correction",logId).with(httpBasic("mariana","demo1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"startTime":"09:00","endTime":"18:30","breakMinutes":30,"reason":"Am lucrat o oră în plus"}
+                        """))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("SUBMITTED")).andExpect(jsonPath("$.hours").value(9.00));
+        mvc.perform(put("/api/management/logs/{id}/review",logId).with(httpBasic("manager","manager1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"approved\":true}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("APPROVED")).andExpect(jsonPath("$.hours").value(9.00));
+        mvc.perform(put("/api/hotel/logs/{id}/correction",logId).with(httpBasic("mariana","demo1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"startTime":"08:00","endTime":"18:30","breakMinutes":30,"reason":"A doua corectare"}
+                        """))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("SUBMITTED"));
+        mvc.perform(put("/api/management/logs/{id}/review",logId).with(httpBasic("manager","manager1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"approved\":false,\"reason\":\"Planul inițial este corect\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("APPROVED")).andExpect(jsonPath("$.hours").value(8.00));
+    }
 }

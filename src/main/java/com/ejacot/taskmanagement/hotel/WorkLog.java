@@ -12,6 +12,7 @@ public class WorkLog {
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "employee_id") private UserAccount employee;
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "hotel_id") private Hotel hotel;
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "work_type_id") private WorkType workType;
+    @OneToOne(fetch = FetchType.LAZY) @JoinColumn(name = "shift_plan_id") private ShiftPlan shiftPlan;
     @Column(name = "work_date", nullable = false) private LocalDate workDate;
     @Column(name = "start_time") private LocalTime startTime;
     @Column(name = "end_time") private LocalTime endTime;
@@ -42,11 +43,21 @@ public class WorkLog {
         this.notes = notes; this.status = LogStatus.DRAFT;
         this.createdAt = Instant.now(); this.updatedAt = this.createdAt;
     }
+    public WorkLog(ShiftPlan plan, BigDecimal calculatedHours, int breakMinutes) {
+        this(plan.getEmployee(), plan.getHotel(), plan.getWorkType(), plan.getWorkDate(), plan.getStartTime(),
+                plan.getEndTime(), breakMinutes, null, null, calculatedHours, "Generat automat din plan");
+        this.shiftPlan = plan;
+        this.status = LogStatus.APPROVED;
+    }
     public void submit() { this.status = LogStatus.SUBMITTED; this.updatedAt = Instant.now(); }
     public void setRoomBreakdown(int normal,int junior,int president,String attachmentName,String attachmentData){this.normalRooms=normal;this.juniorRooms=junior;this.presidentRooms=president;this.quantity=normal+junior+president;this.attachmentName=attachmentName;this.attachmentData=attachmentData;}
     public void review(UserAccount reviewer,boolean approved,String reason){this.status=approved?LogStatus.APPROVED:LogStatus.REJECTED;this.reviewedBy=reviewer;this.reviewedAt=Instant.now();this.rejectionReason=approved?null:reason;this.updatedAt=Instant.now();}
+    public void syncFromPlan(BigDecimal hours,int breakMinutes){if(shiftPlan==null)return;this.workType=shiftPlan.getWorkType();this.workDate=shiftPlan.getWorkDate();this.startTime=shiftPlan.getStartTime();this.endTime=shiftPlan.getEndTime();this.breakMinutes=breakMinutes;this.calculatedHours=hours;this.status=LogStatus.APPROVED;this.notes="Generat automat din plan";this.rejectionReason=null;this.updatedAt=Instant.now();}
+    public void requestCorrection(LocalTime start,LocalTime end,int breakMinutes,BigDecimal hours,String reason){if(shiftPlan==null)throw new IllegalStateException("Pontajul nu este legat de plan");this.startTime=start;this.endTime=end;this.breakMinutes=breakMinutes;this.calculatedHours=hours;this.notes=reason;this.status=LogStatus.SUBMITTED;this.rejectionReason=null;this.updatedAt=Instant.now();}
+    public void rejectCorrection(UserAccount reviewer,String reason,BigDecimal plannedHours,int plannedBreak){syncFromPlan(plannedHours,plannedBreak);this.reviewedBy=reviewer;this.reviewedAt=Instant.now();this.rejectionReason=reason;this.updatedAt=Instant.now();}
     public Long getId() { return id; }
     public UserAccount getEmployee() { return employee; }
+    public ShiftPlan getShiftPlan(){return shiftPlan;}
     public WorkType getWorkType() { return workType; }
     public LocalDate getWorkDate() { return workDate; }
     public LocalTime getStartTime() { return startTime; }
