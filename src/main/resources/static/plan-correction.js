@@ -33,4 +33,5 @@
       const button=document.createElement('button');button.type='button';button.className='correct-plan-btn';button.textContent='Modifică orele';button.addEventListener('click',()=>openCorrection(log));statusCell.append(button);
     });
   };
+  window.openPlanCorrection=openCorrection;
 })();

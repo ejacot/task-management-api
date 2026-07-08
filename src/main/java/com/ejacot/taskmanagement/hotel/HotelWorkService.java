@@ -44,7 +44,7 @@ public class HotelWorkService {
                 HotelDtos.Me.from(user),
                 new HotelDtos.HotelView(user.getHotel().getId(), user.getHotel().getName(), user.getHotel().getCity(),user.getHotel().getNormalRoomsPerHour(),user.getHotel().getJuniorRoomsPerHour(),user.getHotel().getPresidentRoomsPerHour()),
                 workTypes.findAllByHotelIdAndActiveTrueOrderByName(user.getHotel().getId()).stream().map(HotelDtos.WorkTypeView::from).toList(),
-                plans.findAllByEmployeeUsernameAndWorkDateBetweenOrderByWorkDateAscStartTimeAsc(username, weekStart, weekStart.plusDays(13)).stream().map(HotelDtos.PlanView::from).toList(),
+                plans.findAllByEmployeeUsernameAndWorkDateBetweenOrderByWorkDateAscStartTimeAsc(username, weekStart.minusWeeks(26), weekStart.plusWeeks(26).plusDays(6)).stream().map(HotelDtos.PlanView::from).toList(),
                 historyLogs.stream().map(HotelDtos.LogView::from).toList(),
                 notifications.findTop20ByRecipientUsernameOrderByCreatedAtDesc(username).stream().map(HotelDtos.NotificationView::from).toList(),
                 new HotelDtos.Metrics(hours, gross, estimatedNet, monthLogs.stream().mapToInt(log -> log.getQuantity() == null ? 0 : log.getQuantity()).sum())
