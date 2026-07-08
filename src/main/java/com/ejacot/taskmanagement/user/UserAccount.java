@@ -77,4 +77,6 @@ public class UserAccount {
     public Hotel getHotel() { return hotel; }
     public Instant getCreatedAt() { return createdAt; }
     public void configureProfile(String firstName,String lastName,String address,Integer steuerClass){this.firstName=firstName;this.lastName=lastName;this.address=address;this.steuerClass=steuerClass;}
+    public void updateProfile(String firstName,String lastName,String email,String phone,String address,Integer steuerClass){this.firstName=firstName;this.lastName=lastName;this.email=email;this.phone=phone;this.address=address;this.steuerClass=steuerClass;}
+    public void changePassword(String password){this.password=password;}
 }

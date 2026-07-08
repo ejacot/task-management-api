@@ -102,4 +102,22 @@ class HotelWorkApiIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{\"approved\":false,\"reason\":\"Planul inițial este corect\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("APPROVED")).andExpect(jsonPath("$.hours").value(8.00));
     }
+
+    @Test
+    void employeeCanCreateRequestAndLoadPayroll() throws Exception {
+        String created=mvc.perform(post("/api/employee/requests").with(httpBasic("mariana","demo1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"type":"SCHEDULE_CHANGE","startDate":"2026-08-21","endDate":"2026-08-21","message":"Am nevoie de alt program"}
+                        """))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("PENDING"))
+                .andReturn().getResponse().getContentAsString();
+        long id=new com.fasterxml.jackson.databind.ObjectMapper().readTree(created).get("id").asLong();
+        mvc.perform(get("/api/employee/management/requests").with(httpBasic("manager","manager1234")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(id));
+        mvc.perform(put("/api/employee/management/requests/{id}",id).with(httpBasic("manager","manager1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"approved\":true,\"response\":\"Aprobat\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("APPROVED"));
+        mvc.perform(get("/api/employee/payroll/2026").with(httpBasic("mariana","demo1234")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.months.length()").value(12));
+    }
 }
