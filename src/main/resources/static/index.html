@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="/annual-chart.css?v=6">
   <link rel="stylesheet" href="/report-filters.css?v=1">
   <link rel="stylesheet" href="/plan-correction.css?v=1">
+  <link rel="stylesheet" href="/week-slider.css?v=1">
 </head>
 <body>
   <section id="login-view" class="login-view">
@@ -28,7 +29,7 @@
       <section id="overview" class="view active-view">
         <div class="welcome"><div><p class="kicker" id="today-label"></p><h1>Bună, <em id="first-name">Mariana</em></h1><p class="muted">Iată cum arată luna ta până acum.</p></div><button class="btn primary" data-open-log>+ Adaugă activitate</button></div>
         <div id="next-shift" class="next-shift"><div class="shift-date"><strong>—</strong><span>URMĂTORUL PLAN</span></div><div class="shift-main"><small>Se încarcă...</small><h3>Planul următor</h3><p></p></div><div class="shift-time"></div></div>
-        <section class="card calendar-card"><div class="card-head"><div><p class="kicker">CALENDARUL MEU</p><h2>Săptămâna aceasta și următoarea</h2></div><div class="week-totals"><span>Acum <strong id="this-week-hours">0h</strong></span><span>Următoarea <strong id="next-week-hours">0h</strong></span></div></div><div id="employee-calendar" class="employee-calendar"></div></section>
+        <section class="card calendar-card"><div class="card-head"><div><p class="kicker">CALENDARUL MEU</p><h2>Săptămâna aceasta</h2></div><div class="week-totals"><span>Total planificat <strong id="this-week-hours">0 h</strong></span><span class="hidden">Următoarea <strong id="next-week-hours">0 h</strong></span></div></div><div id="employee-calendar" class="employee-calendar"></div></section>
         <div class="metric-grid"><article><span>Ore luna aceasta</span><strong id="metric-hours">0</strong><small>ore calculate</small></article><article><span>Camere realizate</span><strong id="metric-rooms">0</strong><small>toate tipurile</small></article><article><span>Brut estimat</span><strong id="metric-gross">€0</strong><small>tarif individual</small></article><article class="accent"><span>Net orientativ</span><strong id="metric-net">€0</strong><small>estimare neoficială</small></article></div>
         <div class="two-cols"><section class="card"><div class="card-head"><div><p class="kicker">SĂPTĂMÂNA CURENTĂ</p><h2>Planul meu</h2></div><button class="text-btn" data-go="plan">Vezi tot →</button></div><div id="week-list" class="week-list"></div></section><section class="card"><div class="card-head"><div><p class="kicker">ACTIVITATE</p><h2>Ultimele înregistrări</h2></div></div><div id="recent-list" class="recent-list"></div></section></div>
       </section>
@@ -45,5 +46,5 @@
   <dialog id="plan-dialog"><form id="plan-form"><div class="dialog-head"><div><p class="kicker">PLANIFICARE</p><h2>Adaugă în plan</h2></div><button type="button" id="close-plan">×</button></div><label>Angajați</label><div id="employee-checks" class="employee-checks"></div><label>Tipul zilei</label><select id="shift-kind"><option value="WORK">Activitate</option><option value="FREE">Liber (F)</option><option value="VACATION">Concediu (U)</option><option value="SICK">Medical (K)</option></select><div id="plan-work-fields"><label>Activitate</label><select id="plan-work-type"></select><div class="field-grid"><div><label>De la</label><input id="plan-start" type="time"></div><div><label>Până la</label><input id="plan-end" type="time"></div></div></div><label>Data</label><input id="plan-date" type="date" required><label>Observații</label><textarea id="plan-notes" rows="2"></textarea><p id="plan-error" class="error"></p><div class="dialog-actions"><button type="button" id="cancel-plan" class="btn ghost">Renunță</button><button type="submit" class="btn primary">Publică planul</button></div></form></dialog>
 
   <dialog id="notifications-dialog"><div class="dialog-head"><div><p class="kicker">ACTUALIZĂRI</p><h2>Notificări</h2></div><button type="button" id="close-notifications">×</button></div><div id="notifications-list" class="notification-list"></div></dialog>
-  <div id="toast" class="toast"></div><script src="/annual-chart.js?v=7" defer></script><script src="/plan-correction.js?v=1" defer></script><script src="/app.js?v=7" defer></script>
+  <div id="toast" class="toast"></div><script src="/annual-chart.js?v=8" defer></script><script src="/plan-correction.js?v=2" defer></script><script src="/week-slider.js?v=1" defer></script><script src="/app.js?v=8" defer></script>
 </body></html>
