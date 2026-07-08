@@ -13,8 +13,11 @@
     $('#plan-week-label').textContent=`${shortDate(start)} – ${shortDate(end)} ${end.getFullYear()}`;
     $('#plan-week-title').textContent=planOffset===0?'Săptămâna aceasta':planOffset===1?'Săptămâna viitoare':planOffset===-1?'Săptămâna trecută':'Calendar săptămânal';
     const cells=Array.from({length:7},(_,index)=>{
-      const date=addDays(start,index),key=iso(date),plans=data.plans.filter(plan=>plan.date===key);
-      return `<article class="detailed-day ${key===today?'today':''}"><header><span>${new Intl.DateTimeFormat('ro-RO',{weekday:'long'}).format(date)}</span><strong>${date.getDate()}</strong></header><div class="day-events">${plans.map(plan=>`<div class="detailed-plan kind-${plan.kind}" style="--event-color:${plan.color}"><strong>${planName(plan)}</strong>${plan.kind==='WORK'?`<span>${time(plan.startTime)}–${time(plan.endTime)}</span>`:''}${plan.notes?`<small>${plan.notes}</small>`:''}</div>`).join('')||'<p class="empty-day">Nimic planificat</p>'}</div></article>`;
+      const date=addDays(start,index),key=iso(date),plans=data.plans.filter(plan=>plan.date===key),logs=data.logs.filter(log=>log.date===key),past=key<today;
+      const actual=logs.map(log=>`<div class="detailed-plan actual-work"><strong>${log.workType}</strong><span>${time(log.startTime)}${log.startTime&&log.endTime?'–':''}${time(log.endTime)} · ${Number(log.hours).toLocaleString('ro-RO',{maximumFractionDigits:1})} h</span><small>${log.status==='SUBMITTED'?'Modificare în așteptare':'Lucrat'}</small></div>`).join('');
+      const planned=plans.map(plan=>`<div class="detailed-plan kind-${plan.kind}" style="--event-color:${plan.color}"><strong>${planName(plan)}</strong>${plan.kind==='WORK'?`<span>${time(plan.startTime)}–${time(plan.endTime)}</span>`:''}${plan.notes?`<small>${plan.notes}</small>`:''}</div>`).join('');
+      const content=past?(actual||planned):(planned||actual);
+      return `<article class="detailed-day ${key===today?'today':''} ${past?'past-day':''}"><header><span>${new Intl.DateTimeFormat('ro-RO',{weekday:'long'}).format(date)}</span><strong>${date.getDate()}</strong></header><div class="day-events">${content||'<p class="empty-day">Nicio activitate</p>'}</div></article>`;
     }).join('');
     const board=$('#full-plan');board.className=`weekly-plan-calendar calendar-${direction}`;board.innerHTML=cells;
   }
@@ -41,7 +44,7 @@
   function createControls(){
     const planHead=$('#plan .page-head>div');planHead.querySelector('h1').id='plan-week-title';planHead.querySelector('.muted').textContent='Programul tău, organizat pe săptămâni.';
     $('#plan .page-head').insertAdjacentHTML('beforeend','<div class="calendar-nav"><button id="plan-prev" aria-label="Săptămâna anterioară">‹</button><strong id="plan-week-label"></strong><button id="plan-next" aria-label="Săptămâna următoare">›</button></div>');
-    $('#history .table-card').insertAdjacentHTML('beforebegin','<div class="history-calendar-nav"><button id="history-prev" aria-label="Luna anterioară">‹</button><strong id="history-month-label"></strong><button id="history-next" aria-label="Luna următoare">›</button></div>');
+    const historyTable=$('#history .table-card');historyTable.insertAdjacentHTML('beforebegin','<div class="history-calendar-nav"><button id="history-prev" aria-label="Luna anterioară">‹</button><strong id="history-month-label"></strong><button id="history-next" aria-label="Luna următoare">›</button></div>');historyTable.insertAdjacentElement('afterend',$('#history .annual-card'));
     $('#plan-prev').addEventListener('click',()=>changePlan(-1));$('#plan-next').addEventListener('click',()=>changePlan(1));$('#history-prev').addEventListener('click',()=>changeHistory(-1));$('#history-next').addEventListener('click',()=>changeHistory(1));
     const plan=$('#full-plan'),history=$('#history .table-card');plan.addEventListener('pointerdown',event=>planStartX=event.clientX);plan.addEventListener('pointerup',event=>{if(planStartX===null)return;const d=event.clientX-planStartX;planStartX=null;if(d<-55)changePlan(1);if(d>55)changePlan(-1)});history.addEventListener('pointerdown',event=>historyStartX=event.clientX);history.addEventListener('pointerup',event=>{if(historyStartX===null)return;const d=event.clientX-historyStartX;historyStartX=null;if(d<-55)changeHistory(1);if(d>55)changeHistory(-1)});
   }
