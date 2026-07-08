@@ -15,6 +15,7 @@ public class EmployeePortalController {
  @PutMapping("/profile") @ResponseStatus(HttpStatus.NO_CONTENT) public void profile(Authentication a,@Valid @RequestBody EmployeePortalDtos.ProfileUpdate r){service.profile(a.getName(),r);}
  @PutMapping("/password") @ResponseStatus(HttpStatus.NO_CONTENT) public void password(Authentication a,@Valid @RequestBody EmployeePortalDtos.PasswordChange r){service.password(a.getName(),r);}
  @GetMapping("/payroll/{year}") public EmployeePortalDtos.PayrollYear payroll(Authentication a,@PathVariable int year){return service.payroll(a.getName(),year);}
+ @GetMapping("/rooms") public List<ManagementDtos.RoomAssignmentView> rooms(Authentication a,@RequestParam java.time.LocalDate from,@RequestParam java.time.LocalDate to){return service.rooms(a.getName(),from,to);}
  @GetMapping("/management/requests") @PreAuthorize("hasAnyRole('MANAGER','EMPLOYER','CHECKER')") public List<EmployeePortalDtos.RequestView> pending(Authentication a){return service.pending(a.getName());}
  @PutMapping("/management/requests/{id}") @PreAuthorize("hasAnyRole('MANAGER','EMPLOYER')") public EmployeePortalDtos.RequestView review(Authentication a,@PathVariable Long id,@Valid @RequestBody EmployeePortalDtos.ReviewRequest r){return service.review(a.getName(),id,r);}
 }

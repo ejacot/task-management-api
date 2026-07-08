@@ -63,6 +63,11 @@ class HotelWorkApiIntegrationTest {
                                 """.formatted(employeeId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$[0].kind").value("VACATION"));
+        mvc.perform(post("/api/management/plans/copy-week").with(httpBasic("manager","manager1234"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sourceMonday\":\"2026-07-06\",\"targetMonday\":\"2026-07-13\",\"overwrite\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.date == '2026-07-19')].kind").value(org.hamcrest.Matchers.hasItem("VACATION")));
     }
 
     @Test
@@ -138,5 +143,23 @@ class HotelWorkApiIntegrationTest {
                 .andExpect(jsonPath("$.plans[?(@.date == '2026-09-14')].kind").value(org.hamcrest.Matchers.hasItem("VACATION")))
                 .andExpect(jsonPath("$.plans[?(@.date == '2026-09-15')].kind").value(org.hamcrest.Matchers.hasItem("VACATION")))
                 .andExpect(jsonPath("$.plans[?(@.date == '2026-09-16')].kind").value(org.hamcrest.Matchers.hasItem("VACATION")));
+    }
+
+    @Test
+    void managerCanAssignRoomsAndEmployeeCanOnlyReadTheirList() throws Exception {
+        var mapper=new com.fasterxml.jackson.databind.ObjectMapper();
+        var bootstrap=mapper.readTree(mvc.perform(get("/api/hotel/bootstrap").with(httpBasic("mariana","demo1234"))).andReturn().getResponse().getContentAsString());
+        long employeeId=bootstrap.get("me").get("id").asLong();
+        mvc.perform(post("/api/management/rooms").with(httpBasic("manager","manager1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"employeeIds":[%d],"date":"2026-10-05","rooms":[{"number":"301","category":"NORMAL"},{"number":"801","category":"PRESIDENT"}]}
+                        """.formatted(employeeId)))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.length()").value(2));
+        mvc.perform(get("/api/employee/rooms?from=2026-10-05&to=2026-10-05").with(httpBasic("mariana","demo1234")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].roomNumber").value("301")).andExpect(jsonPath("$[1].roomNumber").value("801"));
+        mvc.perform(post("/api/management/rooms").with(httpBasic("mariana","demo1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"employeeIds":[%d],"date":"2026-10-06","rooms":[{"number":"302","category":"NORMAL"}]}
+                        """.formatted(employeeId))).andExpect(status().isForbidden());
     }
 }
