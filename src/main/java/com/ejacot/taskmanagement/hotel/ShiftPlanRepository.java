@@ -9,5 +9,6 @@ public interface ShiftPlanRepository extends JpaRepository<ShiftPlan, Long> {
             String username, LocalDate from, LocalDate to);
     List<ShiftPlan> findAllByHotelIdAndWorkDateBetweenOrderByWorkDateAscStartTimeAsc(Long hotelId,LocalDate from,LocalDate to);
     java.util.Optional<ShiftPlan> findByIdAndHotelId(Long id,Long hotelId);
+    List<ShiftPlan> findAllByEmployeeIdAndWorkDate(Long employeeId,LocalDate workDate);
 }
 

@@ -120,4 +120,23 @@ class HotelWorkApiIntegrationTest {
         mvc.perform(get("/api/employee/payroll/2026").with(httpBasic("mariana","demo1234")))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.months.length()").value(12));
     }
+
+    @Test
+    void approvedVacationRequestAutomaticallyUpdatesTheEmployeePlan() throws Exception {
+        var mapper=new com.fasterxml.jackson.databind.ObjectMapper();
+        String created=mvc.perform(post("/api/employee/requests").with(httpBasic("mariana","demo1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"type":"VACATION","startDate":"2026-09-14","endDate":"2026-09-16","message":"Concediu"}
+                        """))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long id=mapper.readTree(created).get("id").asLong();
+        mvc.perform(put("/api/employee/management/requests/{id}",id).with(httpBasic("manager","manager1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"approved\":true,\"response\":\"Concediu aprobat\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("APPROVED"));
+        mvc.perform(get("/api/hotel/bootstrap").with(httpBasic("mariana","demo1234")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.plans[?(@.date == '2026-09-14')].kind").value(org.hamcrest.Matchers.hasItem("VACATION")))
+                .andExpect(jsonPath("$.plans[?(@.date == '2026-09-15')].kind").value(org.hamcrest.Matchers.hasItem("VACATION")))
+                .andExpect(jsonPath("$.plans[?(@.date == '2026-09-16')].kind").value(org.hamcrest.Matchers.hasItem("VACATION")));
+    }
 }
