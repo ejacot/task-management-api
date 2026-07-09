@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/hotel")
 public class HotelWorkController {
-    private final HotelWorkService service;
-    public HotelWorkController(HotelWorkService service) { this.service = service; }
+    private final HotelWorkService service; private final PushSubscriptionRepository pushSubscriptions; private final com.ejacot.taskmanagement.user.UserAccountRepository users;
+    public HotelWorkController(HotelWorkService service, PushSubscriptionRepository pushSubscriptions, com.ejacot.taskmanagement.user.UserAccountRepository users) { this.service = service; this.pushSubscriptions = pushSubscriptions; this.users = users; }
 
     @GetMapping("/bootstrap")
     public HotelDtos.Bootstrap bootstrap(Authentication auth) { return service.bootstrap(auth.getName()); }
@@ -28,4 +28,9 @@ public class HotelWorkController {
 
     @PutMapping("/notifications/{id}/read") @ResponseStatus(HttpStatus.NO_CONTENT)
     public void read(Authentication auth,@PathVariable Long id){service.readNotification(auth.getName(),id);}
+
+    @PostMapping("/push-subscriptions") @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void push(Authentication auth,@Valid @RequestBody NotificationDtos.PushSubscriptionRequest request){
+        if(!pushSubscriptions.existsByEndpoint(request.endpoint())) pushSubscriptions.save(new PushSubscription(users.findByUsername(auth.getName()).orElseThrow(), request.endpoint(), request.p256dh(), request.auth()));
+    }
 }

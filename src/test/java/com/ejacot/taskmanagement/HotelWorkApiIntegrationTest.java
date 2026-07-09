@@ -162,4 +162,28 @@ class HotelWorkApiIntegrationTest {
                         {"employeeIds":[%d],"date":"2026-10-06","rooms":[{"number":"302","category":"NORMAL"}]}
                         """.formatted(employeeId))).andExpect(status().isForbidden());
     }
+
+    @Test
+    void tokenLoginRoomCompletionCheckerAndPayrollExportWork() throws Exception {
+        var mapper=new com.fasterxml.jackson.databind.ObjectMapper();
+        String login=mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content("""
+                {"login":"mariana","password":"demo1234"}
+                """)).andExpect(status().isOk()).andExpect(jsonPath("$.token").exists()).andReturn().getResponse().getContentAsString();
+        String token=mapper.readTree(login).get("token").asText();
+        var bootstrap=mapper.readTree(mvc.perform(get("/api/hotel/bootstrap").header("Authorization","Bearer "+token)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        long employeeId=bootstrap.get("me").get("id").asLong();
+        String assigned=mvc.perform(post("/api/management/rooms").with(httpBasic("manager","manager1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"employeeIds":[%d],"date":"2026-11-02","rooms":[{"number":"401","category":"NORMAL"}]}
+                        """.formatted(employeeId)))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long roomId=mapper.readTree(assigned).get(0).get("id").asLong();
+        mvc.perform(put("/api/employee/rooms/{id}/complete",roomId).header("Authorization","Bearer "+token)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"notes\":\"Gata\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMPLETED"));
+        mvc.perform(get("/api/checker/rooms?date=2026-11-02").with(httpBasic("checker","checker1234")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.completed").value(1));
+        mvc.perform(get("/api/admin/payroll/export.csv?year=2026&month=1").with(httpBasic("angajator","admin1234")))
+                .andExpect(status().isOk()).andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("payroll-2026-1.csv")));
+    }
 }

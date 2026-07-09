@@ -20,11 +20,22 @@ import java.time.Instant;
 public class AuthController {
     private final UserAccountRepository users;
     private final PasswordEncoder passwordEncoder;
+    private final TokenService tokenService;
     private final SecureRandom random = new SecureRandom();
 
-    public AuthController(UserAccountRepository users, PasswordEncoder passwordEncoder) {
+    public AuthController(UserAccountRepository users, PasswordEncoder passwordEncoder, TokenService tokenService) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
+        this.tokenService = tokenService;
+    }
+
+    @PostMapping("/login")
+    public LoginResponse login(@Valid @RequestBody LoginRequest request) {
+        UserAccount user = users.findByLogin(request.login())
+                .filter(UserAccount::isActive)
+                .filter(value -> passwordEncoder.matches(request.password(), value.getPassword()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Contul sau parola nu sunt corecte"));
+        return new LoginResponse(tokenService.create(user), user.getUsername(), user.getRole().name());
     }
 
     @PostMapping("/register")
@@ -83,6 +94,8 @@ public class AuthController {
             @NotBlank @Size(min = 8, max = 72) String password) {}
 
     public record AcceptInvitationRequest(@NotBlank @Size(min = 8, max = 72) String password) {}
+    public record LoginRequest(@NotBlank String login,@NotBlank String password) {}
+    public record LoginResponse(String token,String username,String role) {}
     public record ResetRequest(@NotBlank String login) {}
     public record ResetConfirm(@NotBlank String code,@NotBlank @Size(min = 8, max = 72) String newPassword) {}
     public record UserResponse(Long id, String username, Instant createdAt) {}

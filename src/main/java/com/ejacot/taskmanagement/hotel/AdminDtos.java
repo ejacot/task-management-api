@@ -20,4 +20,5 @@ public final class AdminDtos {
     }
     public record WorkTypeUpdate(@NotBlank @Size(max=30) String code,@NotBlank @Size(max=100) String name,@NotNull WorkUnit unit,@DecimalMin("0.01") BigDecimal roomsPerHour,@Pattern(regexp="^#[0-9A-Fa-f]{6}$") String color,boolean active,LocalTime defaultStartTime,LocalTime defaultEndTime,@Min(0) @Max(180) int defaultBreakMinutes) {}
     public record MonthlyClose(int year,int month,BigDecimal hours,BigDecimal gross,BigDecimal estimatedNet,int approvedLogs) {}
+    public record ImportResult(int employees,int plansCreated,int plansSkipped) {}
 }
