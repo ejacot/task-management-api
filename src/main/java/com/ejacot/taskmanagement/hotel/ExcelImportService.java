@@ -21,6 +21,47 @@ public class ExcelImportService {
     public ExcelImportService(UserAccountRepository users, WorkTypeRepository types, ShiftPlanRepository plans, PlanLogService planLogs, PasswordEncoder encoder, NotificationRepository notifications) {
         this.users = users; this.types = types; this.plans = plans; this.planLogs = planLogs; this.encoder = encoder; this.notifications = notifications;
     }
+    @Transactional(readOnly = true)
+    public AdminDtos.ImportPreview preview(String username, MultipartFile file) {
+        UserAccount actor = users.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        if (actor.getRole() != UserRole.MANAGER && actor.getRole() != UserRole.EMPLOYER) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Row header = sheet.getRow(0);
+            if (header == null || header.getLastCellNum() < 2) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Excelul trebuie sa aiba zilele pe primul rand.");
+            List<String> days = new ArrayList<>();
+            List<String> warnings = new ArrayList<>();
+            for (int column = 1; column < header.getLastCellNum(); column++) {
+                try {
+                    days.add(day(header.getCell(column)).toString());
+                } catch (ResponseStatusException e) {
+                    days.add("coloana " + column);
+                    warnings.add("Nu pot citi data din coloana " + (column + 1) + ": " + text(header.getCell(column)));
+                }
+            }
+            List<AdminDtos.ImportPreviewRow> rows = new ArrayList<>();
+            int planCells = 0;
+            for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+                Row row = sheet.getRow(rowIndex);
+                if (row == null) continue;
+                String name = text(row.getCell(0));
+                if (name.isBlank()) continue;
+                List<String> values = new ArrayList<>();
+                for (int column = 1; column <= days.size(); column++) {
+                    String value = text(row.getCell(column));
+                    values.add(value);
+                    if (!value.isBlank()) planCells++;
+                }
+                rows.add(new AdminDtos.ImportPreviewRow(name, values));
+            }
+            if (rows.isEmpty()) warnings.add("Nu am gasit angajati in prima foaie Excel.");
+            return new AdminDtos.ImportPreview(file.getOriginalFilename(), workbook.getNumberOfSheets(), rows.size(), planCells, days, rows.stream().limit(30).toList(), warnings);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nu am putut citi Excelul: " + e.getMessage());
+        }
+    }
     public AdminDtos.ImportResult importPlan(String username, MultipartFile file, boolean overwrite) {
         UserAccount actor = users.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         if (actor.getRole() != UserRole.MANAGER && actor.getRole() != UserRole.EMPLOYER) throw new ResponseStatusException(HttpStatus.FORBIDDEN);

@@ -45,6 +45,8 @@ public class UserAccount {
     @Column(name="invitation_expires_at") private Instant invitationExpiresAt;
     @Column(name="password_reset_code",length=20) private String passwordResetCode;
     @Column(name="password_reset_expires_at") private Instant passwordResetExpiresAt;
+    @Column(name="failed_login_attempts",nullable=false) private int failedLoginAttempts;
+    @Column(name="locked_until") private Instant lockedUntil;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hotel_id")
@@ -83,6 +85,7 @@ public class UserAccount {
     public Hotel getHotel() { return hotel; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getDeactivatedAt(){return deactivatedAt;} public String getInvitationToken(){return invitationToken;} public Instant getInvitationExpiresAt(){return invitationExpiresAt;} public String getPasswordResetCode(){return passwordResetCode;} public Instant getPasswordResetExpiresAt(){return passwordResetExpiresAt;}
+    public int getFailedLoginAttempts(){return failedLoginAttempts;} public Instant getLockedUntil(){return lockedUntil;} public boolean isLocked(){return lockedUntil!=null&&lockedUntil.isAfter(Instant.now());}
     public void configureProfile(String firstName,String lastName,String address,Integer steuerClass){this.firstName=firstName;this.lastName=lastName;this.address=address;this.steuerClass=steuerClass;}
     public void updateProfile(String firstName,String lastName,String email,String phone,String address,Integer steuerClass){this.firstName=firstName;this.lastName=lastName;this.email=email;this.phone=phone;this.address=address;this.steuerClass=steuerClass;}
     public void changePassword(String password){this.password=password;}
@@ -93,4 +96,6 @@ public class UserAccount {
     public void acceptInvitation(String password){this.password=password;this.active=true;this.invitationToken=null;this.invitationExpiresAt=null;}
     public void requestPasswordReset(String code,Instant expiresAt){this.passwordResetCode=code;this.passwordResetExpiresAt=expiresAt;}
     public void resetPassword(String password){this.password=password;this.passwordResetCode=null;this.passwordResetExpiresAt=null;}
+    public void registerLoginFailure(){this.failedLoginAttempts++;if(this.failedLoginAttempts>=5)this.lockedUntil=Instant.now().plusSeconds(900);}
+    public void registerLoginSuccess(){this.failedLoginAttempts=0;this.lockedUntil=null;}
 }

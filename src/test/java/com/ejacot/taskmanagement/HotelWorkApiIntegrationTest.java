@@ -183,7 +183,41 @@ class HotelWorkApiIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMPLETED"));
         mvc.perform(get("/api/checker/rooms?date=2026-11-02").with(httpBasic("checker","checker1234")))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.completed").value(1));
+        mvc.perform(put("/api/checker/rooms/{id}",roomId).with(httpBasic("checker","checker1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"DEFECT\",\"defectDescription\":\"Prosop lipsa\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("DEFECT")).andExpect(jsonPath("$.defectStatus").value("OPEN"));
+        mvc.perform(put("/api/checker/rooms/{id}/defect",roomId).with(httpBasic("checker","checker1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"IN_PROGRESS\",\"notes\":\"Se rezolva\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.defectStatus").value("IN_PROGRESS"));
+        mvc.perform(put("/api/checker/rooms/{id}/defect",roomId).with(httpBasic("checker","checker1234"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"RESOLVED\",\"notes\":\"Rezolvat\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CHECKED")).andExpect(jsonPath("$.defectStatus").value("RESOLVED"));
         mvc.perform(get("/api/admin/payroll/export.csv?year=2026&month=1").with(httpBasic("angajator","admin1234")))
                 .andExpect(status().isOk()).andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("payroll-2026-1.csv")));
+    }
+
+    @Test
+    void excelPreviewAndStaticFrontendAssetsWork() throws Exception {
+        try (var workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(); var out = new java.io.ByteArrayOutputStream()) {
+            var sheet = workbook.createSheet("Plan");
+            var header = sheet.createRow(0);
+            header.createCell(0).setCellValue("Name Vorname");
+            header.createCell(1).setCellValue("2026-12-01");
+            header.createCell(2).setCellValue("2026-12-02");
+            var row = sheet.createRow(1);
+            row.createCell(0).setCellValue("Test Angajat");
+            row.createCell(1).setCellValue("CH 09:00-17:30");
+            row.createCell(2).setCellValue("F");
+            workbook.write(out);
+            var file = new org.springframework.mock.web.MockMultipartFile("file","plan.xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",out.toByteArray());
+            mvc.perform(multipart("/api/admin/imports/plans/preview").file(file).with(httpBasic("manager","manager1234")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.employees").value(1))
+                    .andExpect(jsonPath("$.planCells").value(2))
+                    .andExpect(jsonPath("$.rows[0].employee").value("Test Angajat"));
+        }
+        mvc.perform(get("/")).andExpect(status().isOk());
+        mvc.perform(get("/admin-checker.js")).andExpect(status().isOk());
+        mvc.perform(get("/manifest.webmanifest")).andExpect(status().isOk()).andExpect(jsonPath("$.short_name").value("Roomly"));
     }
 }

@@ -17,4 +17,5 @@ public class PushSubscription {
     public PushSubscription(UserAccount user, String endpoint, String p256dh, String auth) {
         this.user = user; this.endpoint = endpoint; this.p256dh = p256dh; this.auth = auth;
     }
+    public String getEndpoint() { return endpoint; }
 }

@@ -1,1 +1,20 @@
-{"name":"Roomly Work","short_name":"Roomly","start_url":"/","display":"standalone","background_color":"#f4f1e9","theme_color":"#123f36","icons":[{"src":"/favicon.svg","sizes":"any","type":"image/svg+xml"}]}
+{
+  "name": "Roomly Work",
+  "short_name": "Roomly",
+  "description": "Planificare hotel, camere, pontaj si salarizare estimativa.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f5f5f7",
+  "theme_color": "#f5f5f7",
+  "icons": [
+    {"src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+  ],
+  "shortcuts": [
+    {"name": "Planul meu", "short_name": "Plan", "url": "/#home", "icons": [{"src": "/favicon.svg", "sizes": "any"}]},
+    {"name": "Istoric", "short_name": "Istoric", "url": "/#history", "icons": [{"src": "/favicon.svg", "sizes": "any"}]},
+    {"name": "Camere", "short_name": "Camere", "url": "/#rooms", "icons": [{"src": "/favicon.svg", "sizes": "any"}]}
+  ],
+  "categories": ["business", "productivity"]
+}

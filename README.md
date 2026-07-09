@@ -42,3 +42,21 @@ Aplicația pornește pe <http://localhost:8080>, iar baza PostgreSQL pe portul `
 - H2 pentru local demo
 - PostgreSQL pentru deployment
 - Frontend vanilla HTML/CSS/JS cu PWA manifest
+
+## Ce este pregatit pentru productie
+
+- Autentificare cu Bearer token, lockout dupa incercari gresite si secret configurabil prin `ROOMLY_TOKEN_SECRET`.
+- Import Excel cu preview inainte de salvare.
+- Coada `outbound_messages` pentru email, SMS si push. Pentru trimitere reala trebuie conectat un provider: SMTP/SendGrid pentru email, Twilio/Vonage pentru SMS si VAPID pentru Web Push.
+- PWA instalabila pe telefon, cu service worker si manifest.
+- Calcul salarial orientativ cu sporuri de duminica, noapte si sarbatori legale germane/Bavaria.
+- Workflow camere: repartizare, terminat de angajat, verificat, defect, defect in lucru, rezolvat, eliberat.
+
+## Checklist deploy real
+
+1. Copiaza `.env.example` in `.env` si schimba toate parolele/secretele.
+2. Ruleaza PostgreSQL cu backup automat.
+3. Porneste aplicatia cu `docker compose --env-file .env up --build -d`.
+4. Configureaza HTTPS prin reverse proxy, de exemplu Caddy/Nginx.
+5. Conecteaza worker/provider pentru randurile din `outbound_messages`.
+6. Ruleaza testele inainte de deploy: `.\mvnw.cmd test`.

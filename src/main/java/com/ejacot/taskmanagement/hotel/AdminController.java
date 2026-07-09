@@ -21,5 +21,6 @@ public class AdminController {
  @PutMapping("/work-types/{id}") public HotelDtos.WorkTypeView type(Authentication a,@PathVariable Long id,@Valid @RequestBody AdminDtos.WorkTypeUpdate r){return service.updateType(a.getName(),id,r);}
  @GetMapping("/payroll/monthly-close") @PreAuthorize("hasRole('EMPLOYER')") public AdminDtos.MonthlyClose close(Authentication a,@RequestParam int year,@RequestParam int month){return service.monthlyClose(a.getName(),year,month);}
  @GetMapping("/payroll/export.csv") @PreAuthorize("hasRole('EMPLOYER')") public ResponseEntity<byte[]> export(Authentication a,@RequestParam int year,@RequestParam int month){return payroll.csv(a.getName(),year,month);}
+ @PostMapping(value="/imports/plans/preview",consumes="multipart/form-data") public AdminDtos.ImportPreview previewPlans(Authentication a,@RequestPart("file") MultipartFile file){return excel.preview(a.getName(),file);}
  @PostMapping(value="/imports/plans",consumes="multipart/form-data") public AdminDtos.ImportResult importPlans(Authentication a,@RequestPart("file") MultipartFile file,@RequestParam(defaultValue="false") boolean overwrite){return excel.importPlan(a.getName(),file,overwrite);}
 }
