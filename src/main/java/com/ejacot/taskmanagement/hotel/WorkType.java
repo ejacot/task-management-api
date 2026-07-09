@@ -34,5 +34,6 @@ public class WorkType {
     public boolean isActive() { return active; }
     public LocalTime getDefaultStartTime(){return defaultStartTime;} public LocalTime getDefaultEndTime(){return defaultEndTime;} public int getDefaultBreakMinutes(){return defaultBreakMinutes;}
     public void configureDefaults(LocalTime start,LocalTime end,int breakMinutes){this.defaultStartTime=start;this.defaultEndTime=end;this.defaultBreakMinutes=breakMinutes;}
+    public void update(String code,String name,WorkUnit unit,BigDecimal roomsPerHour,String color,boolean active,LocalTime start,LocalTime end,int breakMinutes){this.code=code;this.name=name;this.unit=unit;this.roomsPerHour=roomsPerHour;this.color=color;this.active=active;this.defaultStartTime=start;this.defaultEndTime=end;this.defaultBreakMinutes=breakMinutes;}
 }
 

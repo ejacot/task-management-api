@@ -19,5 +19,5 @@ public final class ManagementDtos{
  public record CopyWeekRequest(@NotNull LocalDate sourceMonday,@NotNull LocalDate targetMonday,boolean overwrite){}
  public record RoomInput(@NotBlank @Size(max=20) String number,@Pattern(regexp="NORMAL|JUNIOR|PRESIDENT") String category){}
  public record RoomAssignmentRequest(@NotEmpty List<Long> employeeIds,@NotNull LocalDate date,@NotEmpty List<@Valid RoomInput> rooms){}
- public record RoomAssignmentView(Long id,Long employeeId,String employee,LocalDate date,String roomNumber,String category){static RoomAssignmentView from(RoomAssignment value){return new RoomAssignmentView(value.getId(),value.getEmployee().getId(),value.getEmployee().getUsername(),value.getWorkDate(),value.getRoomNumber(),value.getCategory());}}
+ public record RoomAssignmentView(Long id,Long employeeId,String employee,LocalDate date,String roomNumber,String category,RoomAssignmentStatus status,String notes,String defectDescription,String checkedBy,java.time.Instant checkedAt){static RoomAssignmentView from(RoomAssignment value){return new RoomAssignmentView(value.getId(),value.getEmployee().getId(),value.getEmployee().getUsername(),value.getWorkDate(),value.getRoomNumber(),value.getCategory(),value.getStatus(),value.getNotes(),value.getDefectDescription(),value.getCheckedBy()==null?null:value.getCheckedBy().getUsername(),value.getCheckedAt());}}
 }

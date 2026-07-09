@@ -17,6 +17,7 @@ public class Hotel {
     @Column(name="sunday_premium_percent",nullable=false) private BigDecimal sundayPremiumPercent=new BigDecimal("50");
     @Column(name="night_premium_percent",nullable=false) private BigDecimal nightPremiumPercent=new BigDecimal("25");
     @Column(name="holiday_premium_percent",nullable=false) private BigDecimal holidayPremiumPercent=new BigDecimal("100");
+    @Column(name="default_break_minutes",nullable=false) private int defaultBreakMinutes=30;
 
     protected Hotel() {}
     public Hotel(String name, String city) { this.name = name; this.city = city; }
@@ -27,5 +28,7 @@ public class Hotel {
     public BigDecimal getNormalRoomsPerHour(){return normalRoomsPerHour;} public BigDecimal getJuniorRoomsPerHour(){return juniorRoomsPerHour;}
     public BigDecimal getPresidentRoomsPerHour(){return presidentRoomsPerHour;} public BigDecimal getSundayPremiumPercent(){return sundayPremiumPercent;}
     public BigDecimal getNightPremiumPercent(){return nightPremiumPercent;} public BigDecimal getHolidayPremiumPercent(){return holidayPremiumPercent;}
+    public int getDefaultBreakMinutes(){return defaultBreakMinutes;}
+    public void updateSettings(String name,String city,BigDecimal normal,BigDecimal junior,BigDecimal president,BigDecimal sunday,BigDecimal night,BigDecimal holiday,int breakMinutes){this.name=name;this.city=city;this.normalRoomsPerHour=normal;this.juniorRoomsPerHour=junior;this.presidentRoomsPerHour=president;this.sundayPremiumPercent=sunday;this.nightPremiumPercent=night;this.holidayPremiumPercent=holiday;this.defaultBreakMinutes=breakMinutes;}
 }
 

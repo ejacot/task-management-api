@@ -29,6 +29,7 @@ public class UserAccount {
     @Column(name="last_name",length=80) private String lastName;
     @Column(length=255) private String address;
     @Column(name="steuer_class") private Integer steuerClass;
+    @Column(name="team_name",length=120) private String teamName;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -39,6 +40,11 @@ public class UserAccount {
 
     @Column(nullable = false)
     private boolean active = true;
+    @Column(name="deactivated_at") private Instant deactivatedAt;
+    @Column(name="invitation_token",length=80) private String invitationToken;
+    @Column(name="invitation_expires_at") private Instant invitationExpiresAt;
+    @Column(name="password_reset_code",length=20) private String passwordResetCode;
+    @Column(name="password_reset_expires_at") private Instant passwordResetExpiresAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hotel_id")
@@ -70,13 +76,21 @@ public class UserAccount {
     public String getPassword() { return password; }
     public String getEmail() { return email; }
     public String getPhone() { return phone; }
-    public String getFirstName(){return firstName;} public String getLastName(){return lastName;} public String getAddress(){return address;} public Integer getSteuerClass(){return steuerClass;}
+    public String getFirstName(){return firstName;} public String getLastName(){return lastName;} public String getAddress(){return address;} public Integer getSteuerClass(){return steuerClass;} public String getTeamName(){return teamName;}
     public UserRole getRole() { return role; }
     public BigDecimal getHourlyRate() { return hourlyRate; }
     public boolean isActive() { return active; }
     public Hotel getHotel() { return hotel; }
     public Instant getCreatedAt() { return createdAt; }
+    public Instant getDeactivatedAt(){return deactivatedAt;} public String getInvitationToken(){return invitationToken;} public Instant getInvitationExpiresAt(){return invitationExpiresAt;} public String getPasswordResetCode(){return passwordResetCode;} public Instant getPasswordResetExpiresAt(){return passwordResetExpiresAt;}
     public void configureProfile(String firstName,String lastName,String address,Integer steuerClass){this.firstName=firstName;this.lastName=lastName;this.address=address;this.steuerClass=steuerClass;}
     public void updateProfile(String firstName,String lastName,String email,String phone,String address,Integer steuerClass){this.firstName=firstName;this.lastName=lastName;this.email=email;this.phone=phone;this.address=address;this.steuerClass=steuerClass;}
     public void changePassword(String password){this.password=password;}
+    public void adminUpdate(String username,String firstName,String lastName,String email,String phone,String address,Integer steuerClass,UserRole role,BigDecimal hourlyRate,Hotel hotel,String teamName){this.username=username;this.firstName=firstName;this.lastName=lastName;this.email=email;this.phone=phone;this.address=address;this.steuerClass=steuerClass;this.role=role;this.hourlyRate=hourlyRate;this.hotel=hotel;this.teamName=teamName;}
+    public void activate(){this.active=true;this.deactivatedAt=null;}
+    public void deactivate(){this.active=false;this.deactivatedAt=Instant.now();}
+    public void invite(String token,Instant expiresAt){this.invitationToken=token;this.invitationExpiresAt=expiresAt;}
+    public void acceptInvitation(String password){this.password=password;this.active=true;this.invitationToken=null;this.invitationExpiresAt=null;}
+    public void requestPasswordReset(String code,Instant expiresAt){this.passwordResetCode=code;this.passwordResetExpiresAt=expiresAt;}
+    public void resetPassword(String password){this.password=password;this.passwordResetCode=null;this.passwordResetExpiresAt=null;}
 }

@@ -13,4 +13,9 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
     @Query("select u from UserAccount u where lower(u.username) = lower(:login) or lower(u.email) = lower(:login) or u.phone = :login")
     Optional<UserAccount> findByLogin(@Param("login") String login);
     List<UserAccount> findAllByHotelIdAndActiveTrueOrderByUsername(Long hotelId);
+    List<UserAccount> findAllByHotelIdOrderByActiveDescUsernameAsc(Long hotelId);
+    Optional<UserAccount> findByInvitationToken(String token);
+    Optional<UserAccount> findByPasswordResetCode(String code);
+    boolean existsByEmail(String email);
+    boolean existsByPhone(String phone);
 }

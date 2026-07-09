@@ -13,7 +13,9 @@ public final class HotelDtos {
     public record Me(Long id, String username,String firstName,String lastName, String email, String phone,String address,Integer steuerClass, UserRole role, BigDecimal hourlyRate) {
         static Me from(UserAccount u) { return new Me(u.getId(), u.getUsername(),u.getFirstName(),u.getLastName(), u.getEmail(), u.getPhone(),u.getAddress(),u.getSteuerClass(), u.getRole(), u.getHourlyRate()); }
     }
-    public record HotelView(Long id, String name, String city,BigDecimal normalRoomsPerHour,BigDecimal juniorRoomsPerHour,BigDecimal presidentRoomsPerHour) {}
+    public record HotelView(Long id, String name, String city,BigDecimal normalRoomsPerHour,BigDecimal juniorRoomsPerHour,BigDecimal presidentRoomsPerHour,BigDecimal sundayPremiumPercent,BigDecimal nightPremiumPercent,BigDecimal holidayPremiumPercent,int defaultBreakMinutes) {
+        static HotelView from(Hotel h){return new HotelView(h.getId(),h.getName(),h.getCity(),h.getNormalRoomsPerHour(),h.getJuniorRoomsPerHour(),h.getPresidentRoomsPerHour(),h.getSundayPremiumPercent(),h.getNightPremiumPercent(),h.getHolidayPremiumPercent(),h.getDefaultBreakMinutes());}
+    }
     public record WorkTypeView(Long id, String code, String name, WorkUnit unit, BigDecimal roomsPerHour, String color,LocalTime defaultStartTime,LocalTime defaultEndTime,int defaultBreakMinutes) {
         static WorkTypeView from(WorkType t) { return new WorkTypeView(t.getId(), t.getCode(), t.getName(), t.getUnit(), t.getRoomsPerHour(), t.getColor(),t.getDefaultStartTime(),t.getDefaultEndTime(),t.getDefaultBreakMinutes()); }
     }
