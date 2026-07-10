@@ -16,6 +16,7 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
     List<UserAccount> findAllByHotelIdOrderByActiveDescUsernameAsc(Long hotelId);
     Optional<UserAccount> findByInvitationToken(String token);
     Optional<UserAccount> findByPasswordResetCode(String code);
+    Optional<UserAccount> findByEmailVerificationCode(String code);
     boolean existsByEmail(String email);
     boolean existsByPhone(String phone);
 }
