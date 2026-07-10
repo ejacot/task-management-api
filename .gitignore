@@ -15,6 +15,9 @@ target/
 
 ### Local application data ###
 data/
+*.log
+*.png
+tools/
 
 ### IntelliJ IDEA ###
 .idea

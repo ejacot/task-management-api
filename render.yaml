@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: roomly-work
+    runtime: docker
+    plan: free
+    region: frankfurt
+    healthCheckPath: /actuator/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: default
+      - key: DATABASE_URL
+        fromDatabase:
+          name: roomly-postgres
+          property: connectionString
+      - key: ROOMLY_TOKEN_SECRET
+        generateValue: true
+
+databases:
+  - name: roomly-postgres
+    plan: free
+    region: frankfurt
+    databaseName: task_management
+    user: task_user
+    postgresMajorVersion: "17"
