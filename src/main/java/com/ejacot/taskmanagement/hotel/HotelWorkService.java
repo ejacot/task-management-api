@@ -30,7 +30,6 @@ public class HotelWorkService {
     @Transactional(readOnly = true)
     public HotelDtos.Bootstrap bootstrap(String username) {
         UserAccount user = user(username);
-        if (user.getHotel() == null) throw new ResponseStatusException(HttpStatus.CONFLICT, "User is not assigned to a hotel");
         LocalDate today = LocalDate.now();
         LocalDate monthStart = today.withDayOfMonth(1);
         List<WorkLog> monthLogs = logs.findAllByEmployeeUsernameAndWorkDateBetweenOrderByWorkDateDesc(username, monthStart, today);
@@ -40,11 +39,12 @@ public class HotelWorkService {
         BigDecimal gross = hours.multiply(rate).setScale(2, RoundingMode.HALF_UP);
         BigDecimal estimatedNet = gross.multiply(new BigDecimal("0.72")).setScale(2, RoundingMode.HALF_UP);
         LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1L);
+        Hotel hotel = user.getHotel() != null ? user.getHotel() : personalWorkspace();
         return new HotelDtos.Bootstrap(
                 HotelDtos.Me.from(user),
-                HotelDtos.HotelView.from(user.getHotel()),
-                workTypes.findAllByHotelIdAndActiveTrueOrderByName(user.getHotel().getId()).stream().map(HotelDtos.WorkTypeView::from).toList(),
-                plans.findAllByEmployeeUsernameAndWorkDateBetweenOrderByWorkDateAscStartTimeAsc(username, weekStart.minusWeeks(26), weekStart.plusWeeks(26).plusDays(6)).stream().map(HotelDtos.PlanView::from).toList(),
+                HotelDtos.HotelView.from(hotel),
+                workTypes.findAvailableForUser(user.getId(), user.getHotel() == null ? null : user.getHotel().getId()).stream().map(HotelDtos.WorkTypeView::from).toList(),
+                user.getHotel() == null ? List.of() : plans.findAllByEmployeeUsernameAndWorkDateBetweenOrderByWorkDateAscStartTimeAsc(username, weekStart.minusWeeks(26), weekStart.plusWeeks(26).plusDays(6)).stream().map(HotelDtos.PlanView::from).toList(),
                 historyLogs.stream().map(HotelDtos.LogView::from).toList(),
                 notifications.findTop20ByRecipientUsernameOrderByCreatedAtDesc(username).stream().map(HotelDtos.NotificationView::from).toList(),
                 new HotelDtos.Metrics(hours, gross, estimatedNet, monthLogs.stream().mapToInt(log -> log.getQuantity() == null ? 0 : log.getQuantity()).sum())
@@ -54,7 +54,7 @@ public class HotelWorkService {
     public HotelDtos.LogView createLog(String username, HotelDtos.CreateLog request) {
         UserAccount user = user(username);
         WorkType type = workTypes.findById(request.workTypeId())
-                .filter(item -> item.getHotel().getId().equals(user.getHotel().getId()))
+                .filter(item -> belongsToUser(user, item))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Work type not found"));
         BigDecimal hours = calculateHours(type, request);
         WorkLog log = new WorkLog(user, user.getHotel(), type, request.workDate(), request.startTime(), request.endTime(),
@@ -99,6 +99,16 @@ public class HotelWorkService {
     }
     public void readNotification(String username,Long id){Notification n=notifications.findById(id).filter(item->notifications.findTop20ByRecipientUsernameOrderByCreatedAtDesc(username).stream().anyMatch(x->x.getId().equals(item.getId()))).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));n.markRead();}
     private int value(Integer number){return number==null?0:number;}
+    private boolean belongsToUser(UserAccount user, WorkType type){
+        if(type.getOwner()!=null && type.getOwner().getId().equals(user.getId())) return true;
+        return user.getHotel()!=null && type.getHotel()!=null && type.getHotel().getId().equals(user.getHotel().getId());
+    }
+    private Hotel personalWorkspace(){
+        Hotel hotel = new Hotel("Spațiul meu", "Personal");
+        hotel.updateSettings("Spațiul meu", "Personal", new BigDecimal("2.40"), new BigDecimal("1.60"), new BigDecimal("1.20"),
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 30);
+        return hotel;
+    }
 
     private UserAccount user(String username) {
         return users.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));

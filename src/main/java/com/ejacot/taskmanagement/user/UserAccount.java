@@ -92,6 +92,8 @@ public class UserAccount {
     public int getFailedLoginAttempts(){return failedLoginAttempts;} public Instant getLockedUntil(){return lockedUntil;} public boolean isLocked(){return lockedUntil!=null&&lockedUntil.isAfter(Instant.now());}
     public void configureProfile(String firstName,String lastName,String address,Integer steuerClass){this.firstName=firstName;this.lastName=lastName;this.address=address;this.steuerClass=steuerClass;}
     public void updateProfile(String firstName,String lastName,String email,String phone,String address,Integer steuerClass){this.firstName=firstName;this.lastName=lastName;this.email=email;this.phone=phone;this.address=address;this.steuerClass=steuerClass;}
+    public void updateIdentity(String username,String email){this.username=username;this.email=email;}
+    public void syncProfileBasics(String firstName,String lastName,BigDecimal hourlyRate){this.firstName=firstName;this.lastName=lastName;this.hourlyRate=hourlyRate;}
     public void changePassword(String password){this.password=password;}
     public void adminUpdate(String username,String firstName,String lastName,String email,String phone,String address,Integer steuerClass,UserRole role,BigDecimal hourlyRate,Hotel hotel,String teamName){this.username=username;this.firstName=firstName;this.lastName=lastName;this.email=email;this.phone=phone;this.address=address;this.steuerClass=steuerClass;this.role=role;this.hourlyRate=hourlyRate;this.hotel=hotel;this.teamName=teamName;}
     public void activate(){this.active=true;this.deactivatedAt=null;}

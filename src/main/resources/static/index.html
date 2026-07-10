@@ -1,62 +1,421 @@
 <!doctype html>
 <html lang="ro">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#f5f7fb"><meta name="description" content="Planificare și pontaj pentru echipe hoteliere">
-  <title>Roomly Work</title><link rel="icon" href="/favicon.svg"><link rel="manifest" href="/manifest.webmanifest">
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Manrope:wght@700;800&amp;display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css">
-  <link rel="stylesheet" href="/management.css">
-  <link rel="stylesheet" href="/employee.css">
-  <link rel="stylesheet" href="/reference-theme.css">
-  <link rel="stylesheet" href="/annual-chart.css?v=6">
-  <link rel="stylesheet" href="/report-filters.css?v=1">
-  <link rel="stylesheet" href="/plan-correction.css?v=1">
-  <link rel="stylesheet" href="/week-slider.css?v=1">
-  <link rel="stylesheet" href="/detailed-calendars.css?v=4">
-  <link rel="stylesheet" href="/calendar-history.css?v=1">
-  <link rel="stylesheet" href="/employee-portal.css?v=1">
-  <link rel="stylesheet" href="/manager-workflow.css?v=1">
-  <link rel="stylesheet" href="/admin-checker.css?v=1">
-  <link rel="stylesheet" href="/liquid-glass.css?v=1">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f5f7fb">
+  <meta name="description" content="Evidența personală a muncii, orelor și brutului estimat">
+  <title>Roomly Work</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css?v=20260710-1">
 </head>
 <body>
-  <section id="login-view" class="login-view">
-    <div class="login-visual"><div class="logo light"><span>R</span>roomly work</div><div class="login-copy"><p class="kicker">HOTEL WORKFORCE</p><h1>O echipă.<br>Un plan.<br><em>Totul clar.</em></h1><p>Planificare, camere, ore și rezultate — într-un singur loc.</p></div><div class="visual-foot">Infinity Hotel · Unterschleißheim</div></div>
-    <div class="login-panel"><div class="mobile-logo logo"><span>R</span>roomly work</div><form id="login-form"><p class="kicker">BINE AI VENIT</p><h2>Intră în spațiul echipei</h2><p class="muted">Folosește username-ul, e-mailul sau telefonul.</p><label>Cont</label><input id="login" value="" autocomplete="username" required><label>Parolă</label><input id="password" value="" type="password" autocomplete="current-password" required><p id="login-error" class="error"></p><button class="btn primary wide" type="submit">Autentificare <b>→</b></button><div class="auth-links"><button type="button" id="open-register" class="text-btn">Creează cont</button><button type="button" id="open-reset" class="text-btn">Am uitat parola</button></div><div class="demo-box"><strong>Primul cont</strong><span>creează firma și hotelul</span></div></form></div>
+  <section id="auth-screen" class="auth-screen">
+    <div class="auth-hero card">
+      <div class="brand"><span>R</span>roomly work</div>
+      <p class="eyebrow">PERSONAL WORK TRACKER</p>
+      <h1>Munca ta, clară și simplă.</h1>
+      <p class="muted">Adaugi activitatea lucrată, vezi orele, brutul estimat, calendarul și comparațiile dintre perioade.</p>
+    </div>
+    <div class="auth-panel card">
+      <form id="login-form" class="stack">
+        <div>
+          <p class="eyebrow">BINE AI VENIT</p>
+          <h2>Intră în cont</h2>
+          <p class="muted">Emailul și parola sunt suficiente pentru prima versiune.</p>
+        </div>
+        <label>Cont
+          <input id="login" autocomplete="username" required placeholder="emailul tău">
+        </label>
+        <label>Parolă
+          <input id="password" type="password" autocomplete="current-password" required placeholder="••••••••">
+        </label>
+        <p id="login-error" class="error"></p>
+        <button class="btn primary" type="submit">Autentificare</button>
+        <div class="inline-actions">
+          <button type="button" class="text-btn" id="open-register">Creează cont</button>
+          <button type="button" class="text-btn" id="open-reset">Am uitat parola</button>
+        </div>
+      </form>
+    </div>
   </section>
 
   <div id="app" class="app hidden">
-    <aside class="sidebar"><div class="logo light"><span>R</span>roomly</div><nav><button class="nav active" data-view="overview"><i>⌂</i>Acasă</button><button class="nav" data-view="plan"><i>▦</i>Planul meu</button><button class="nav" data-view="history"><i>◷</i>Istoric</button><button id="management-nav" class="nav hidden" data-view="management"><i>♙</i>Echipă</button><button id="checker-nav" class="nav hidden" data-view="checker"><i>✓</i>Checker</button><button id="admin-nav" class="nav hidden" data-view="admin"><i>◉</i>Angajați</button><button class="nav" data-view="settings"><i>⚙</i>Setări</button></nav><div class="profile"><div class="avatar">M</div><div><strong id="side-name">Mariana</strong><small id="side-role">Angajat</small></div><button id="logout" title="Ieșire">↪</button></div></aside>
-    <main class="main">
-      <header class="top"><button id="menu" class="menu">☰</button><div><span id="hotel-name">Infinity Hotel</span><small id="hotel-city">Unterschleißheim</small></div><button class="bell" aria-label="Notificări">♢<b>2</b></button></header>
+    <aside class="sidebar">
+      <div class="brand dark"><span>R</span>roomly</div>
+      <nav class="nav-list">
+        <button class="nav-link active" data-view="today">Astăzi</button>
+        <button class="nav-link" data-view="calendar">Calendar</button>
+        <button class="nav-link" data-view="chat">Chat</button>
+        <button class="nav-link" data-view="statistics">Statistici</button>
+        <button class="nav-link" data-view="profile">Profil</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div>
+          <strong id="sidebar-name">—</strong>
+          <small id="sidebar-email">—</small>
+        </div>
+        <button id="logout" class="btn ghost small">Logout</button>
+      </div>
+    </aside>
 
-      <section id="overview" class="view active-view">
-        <div class="welcome"><div><p class="kicker" id="today-label"></p><h1>Bună, <em id="first-name">Mariana</em></h1><p class="muted">Iată cum arată luna ta până acum.</p></div><button class="btn primary" data-open-log>+ Adaugă activitate</button></div>
-        <div id="next-shift" class="next-shift"><div class="shift-date"><strong>—</strong><span>URMĂTORUL PLAN</span></div><div class="shift-main"><small>Se încarcă...</small><h3>Planul următor</h3><p></p></div><div class="shift-time"></div></div>
-        <section class="card calendar-card"><div class="card-head"><div><p class="kicker">CALENDARUL MEU</p><h2>Săptămâna aceasta</h2></div><div class="week-totals"><span>Total planificat <strong id="this-week-hours">0 h</strong></span><span class="hidden">Următoarea <strong id="next-week-hours">0 h</strong></span></div></div><div id="employee-calendar" class="employee-calendar"></div></section>
-        <div class="metric-grid"><article><span>Ore luna aceasta</span><strong id="metric-hours">0</strong><small>ore calculate</small></article><article><span>Camere realizate</span><strong id="metric-rooms">0</strong><small>toate tipurile</small></article><article><span>Brut estimat</span><strong id="metric-gross">€0</strong><small>tarif individual</small></article><article class="accent"><span>Net orientativ</span><strong id="metric-net">€0</strong><small>estimare neoficială</small></article></div>
-        <div class="two-cols"><section class="card"><div class="card-head"><div><p class="kicker">SĂPTĂMÂNA CURENTĂ</p><h2>Planul meu</h2></div><button class="text-btn" data-go="plan">Vezi tot →</button></div><div id="week-list" class="week-list"></div></section><section class="card"><div class="card-head"><div><p class="kicker">ACTIVITATE</p><h2>Ultimele înregistrări</h2></div></div><div id="recent-list" class="recent-list"></div></section></div>
+    <main class="main-shell">
+      <header class="topbar">
+        <button id="menu-toggle" class="btn ghost small mobile-only">Meniu</button>
+        <div>
+          <p class="eyebrow">ROOMLY WORK</p>
+          <h2 id="topbar-title">Astăzi</h2>
+        </div>
+        <button id="open-entry" class="btn primary">＋ Adaugă activitate</button>
+      </header>
+
+      <section id="today-view" class="view active-view">
+        <div class="hero-row">
+          <div class="card hero-card">
+            <p class="eyebrow" id="today-date-label">ASTĂZI</p>
+            <h1>Bun venit</h1>
+            <p id="today-empty-copy" class="muted">Nu ai adăugat nicio activitate pentru astăzi.</p>
+            <button class="btn primary" id="today-add-button">Adaugă activitate</button>
+          </div>
+          <div class="summary-grid">
+            <article class="card metric-card"><span>Ore luna curentă</span><strong id="today-month-hours">0 h</strong></article>
+            <article class="card metric-card"><span>Zile lucrate</span><strong id="today-month-days">0</strong></article>
+            <article class="card metric-card"><span>Brut estimat</span><strong id="today-month-gross">0 €</strong></article>
+          </div>
+        </div>
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">ACTIVITATEA ZILEI</p>
+              <h3>Ce ai lucrat astăzi</h3>
+            </div>
+          </div>
+          <div id="today-entries" class="entries-list"></div>
+        </section>
       </section>
 
-      <section id="plan" class="view"><div class="page-head"><div><p class="kicker">PROGRAM</p><h1>Planul meu</h1><p class="muted">Planificarea pentru următoarele două săptămâni.</p></div></div><div id="full-plan" class="plan-board"></div></section>
-      <section id="history" class="view"><div class="page-head"><div><p class="kicker">RAPOARTE</p><h1>Istoricul muncii</h1><p class="muted">Compară ore, zile lucrate și venit între perioade.</p></div><button class="btn primary" data-open-log>+ Activitate</button></div><section class="card annual-card"><div class="comparison-head"><div class="comparison-copy"><p class="kicker">COMPARAȚIE ANUALĂ</p><h2 id="annual-title">Comparație ore lucrate</h2><p id="comparison-period" class="muted"></p><div class="chart-toggle" role="group" aria-label="Tip grafic"><button class="active" data-chart-mode="hours">Ore lucrate</button><button data-chart-mode="days">Zile lucrate</button><button data-chart-mode="money">Bani primiți</button></div></div><div class="comparison-stats"><div><span id="label-year-a">TOTAL</span><strong id="total-year-a">0 h</strong></div><div><span id="label-year-b">TOTAL</span><strong id="total-year-b">0 h</strong></div><div class="difference-stat"><span>DIFERENȚĂ</span><strong id="annual-difference">0 h</strong><b id="annual-percent">0%</b></div></div></div><div class="year-controls report-filters"><label>Activitate<select id="annual-activity"><option value="ALL">Toate activitățile</option></select></label><label>Primul an<select id="annual-year-a"></select></label><span>comparat cu</span><label>Al doilea an<select id="annual-year-b"></select></label><label>De la<select id="annual-month-from"></select></label><label>Până la<select id="annual-month-to"></select></label></div><div id="annual-chart" class="annual-chart" aria-label="Grafic comparativ lunar"></div><div id="chart-legend" class="chart-legend"></div><div class="comparison-insights"><article><span class="insight-icon blue">◷</span><div><small>DIFERENȚĂ TOTALĂ</small><strong id="insight-difference">0 h</strong><p>între perioade</p></div></article><article><span class="insight-icon green">↗</span><div><small>EVOLUȚIE PROCENTUALĂ</small><strong id="insight-percent">0%</strong><p>față de primul an</p></div></article><article><span class="insight-icon purple">▦</span><div><small>MEDIA PE LUNĂ</small><strong id="insight-average">0 h</strong><p>în al doilea an</p></div></article><article><span class="insight-icon orange">◴</span><div><small>LUNI MAI BUNE</small><strong id="insight-better">0 din 12</strong><p>față de primul an</p></div></article></div><p id="annual-note" class="annual-note">Sumele reprezintă brutul estimat folosind tariful orar din profil.</p></section><div class="card table-card"><div class="history-head"><span>Data</span><span>Activitate</span><span>Detalii</span><span>Ore</span><span>Status</span></div><div id="history-list"></div></div></section>
-      <section id="management" class="view"><div class="page-head"><div><p class="kicker">MANAGEMENT</p><h1>Planul echipei</h1><p class="muted">Toți angajații și programul lor, într-o singură privire.</p></div><button id="open-plan" class="btn primary">+ Planificare</button></div><section class="team-summary"><span><strong id="team-count">0</strong> angajați</span><span><strong id="planned-count">0</strong> ture planificate</span><span><strong id="free-count">0</strong> zile libere / concediu</span></section><section class="card schedule-card"><div class="card-head"><div><p class="kicker">PROGRAM SĂPTĂMÂNAL</p><h2 id="schedule-week">Săptămâna curentă</h2></div><small class="schedule-hint">Glisează orizontal pentru toate zilele →</small></div><div id="team-plan" class="team-plan"></div></section><section class="card approvals-card"><div class="card-head"><div><p class="kicker">APROBARE</p><h2>Activități trimise</h2></div><span id="pending-count" class="badge">0</span></div><div id="pending-list" class="pending-list"></div></section></section>
-      <section id="checker" class="view"><div class="page-head"><div><p class="kicker">CHECKER</p><h1>Verificare camere</h1><p class="muted">Camere repartizate, probleme și eliberare pentru recepție.</p></div><label class="inline-date">Ziua<input id="checker-date" type="date"></label></div><section id="checker-summary" class="team-summary"></section><section class="card"><div id="checker-rooms" class="checker-rooms"></div></section></section>
-      <section id="admin" class="view"><div class="page-head"><div><p class="kicker">ADMINISTRARE</p><h1>Angajați și firmă</h1><p class="muted">Conturi, roluri, echipe, tarife și reguli de plată.</p></div><button id="new-employee" class="btn primary">+ Angajat</button></div><div class="admin-grid"><section class="card"><div class="card-head"><div><p class="kicker">ECHIPĂ</p><h2>Angajați</h2></div></div><div id="admin-employees" class="admin-list"></div></section><section class="card"><div class="card-head"><div><p class="kicker">SETĂRI</p><h2>Hotel și salarizare</h2></div></div><form id="hotel-settings-form" class="admin-form"></form></section><section class="card full"><div class="card-head"><div><p class="kicker">TIPURI TASK</p><h2>Activități configurabile</h2></div></div><div id="admin-work-types" class="work-type-editor"></div></section></div></section>
-      <section id="settings" class="view"><div class="page-head"><div><p class="kicker">CONFIGURARE</p><h1>Setări</h1><p class="muted">Prima versiune: profil, hotel și regulile vizibile.</p></div></div><div class="settings-grid"><section class="card"><h2>Profilul meu</h2><div id="profile-details" class="details"></div></section><section class="card"><h2>Tipuri de activitate</h2><div id="work-types" class="type-list"></div></section><section class="card full"><h2>Despre estimarea salarială</h2><p class="muted">Brutul folosește orele calculate și tariful individual. Netul afișat în această versiune este strict orientativ și nu înlocuiește calculul oficial de salarizare.</p></section></div></section>
+      <section id="calendar-view" class="view">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">ISTORIC</p>
+            <h3>Calendarul activităților reale</h3>
+          </div>
+          <div class="filter-row">
+            <select id="calendar-month"></select>
+            <select id="calendar-year"></select>
+          </div>
+        </div>
+        <section class="card">
+          <div id="calendar-grid" class="calendar-grid"></div>
+        </section>
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">LISTĂ</p>
+              <h3>Activități din perioada selectată</h3>
+            </div>
+            <div class="filter-row">
+              <select id="history-work-type"></select>
+            </div>
+          </div>
+          <div id="calendar-day-summary" class="muted"></div>
+          <div id="history-entries" class="entries-list"></div>
+        </section>
+      </section>
+
+      <section id="chat-view" class="view">
+        <section class="card placeholder-card">
+          <p class="eyebrow">CHAT</p>
+          <h3>În curând</h3>
+          <p class="muted">Pagina de chat rămâne placeholder în această versiune. Nu are backend încă.</p>
+        </section>
+      </section>
+
+      <section id="statistics-view" class="view">
+        <div class="stats-layout">
+          <section class="card">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">REZUMAT</p>
+                <h3>Perioada selectată</h3>
+              </div>
+              <div class="filter-row">
+                <select id="stats-year"></select>
+                <select id="stats-month">
+                  <option value="">Tot anul</option>
+                </select>
+                <select id="stats-work-type"></select>
+              </div>
+            </div>
+            <div class="summary-grid stats-summary-grid">
+              <article class="metric-card soft">
+                <span>Ore lucrate</span>
+                <strong id="stats-hours">0 h</strong>
+              </article>
+              <article class="metric-card soft">
+                <span>Zile lucrate</span>
+                <strong id="stats-days">0</strong>
+              </article>
+              <article class="metric-card soft">
+                <span>Brut estimat</span>
+                <strong id="stats-gross">0 €</strong>
+              </article>
+              <article class="metric-card soft">
+                <span>Medie ore / zi</span>
+                <strong id="stats-average">0 h</strong>
+              </article>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">GRAFIC ANUAL</p>
+                <h3>Valoare pe lună</h3>
+              </div>
+              <div class="filter-row">
+                <select id="stats-metric">
+                  <option value="hours">Ore</option>
+                  <option value="days">Zile</option>
+                  <option value="gross">Brut</option>
+                </select>
+              </div>
+            </div>
+            <div id="monthly-chart" class="chart-bars"></div>
+          </section>
+
+          <section class="card">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">COMPARAȚIE</p>
+                <h3>Două perioade</h3>
+              </div>
+            </div>
+            <div class="comparison-form">
+              <div class="date-group">
+                <label>De la A<input id="compare-from-a" type="date"></label>
+                <label>Până la A<input id="compare-to-a" type="date"></label>
+              </div>
+              <div class="date-group">
+                <label>De la B<input id="compare-from-b" type="date"></label>
+                <label>Până la B<input id="compare-to-b" type="date"></label>
+              </div>
+              <div class="filter-row">
+                <select id="compare-metric">
+                  <option value="hours">Ore</option>
+                  <option value="days">Zile</option>
+                  <option value="gross">Brut</option>
+                </select>
+                <select id="compare-work-type"></select>
+                <button class="btn primary small" id="run-compare" type="button">Compară</button>
+              </div>
+            </div>
+            <div class="summary-grid stats-summary-grid">
+              <article class="metric-card soft">
+                <span>Perioada A</span>
+                <strong id="compare-total-a">0</strong>
+              </article>
+              <article class="metric-card soft">
+                <span>Perioada B</span>
+                <strong id="compare-total-b">0</strong>
+              </article>
+              <article class="metric-card soft">
+                <span>Diferență</span>
+                <strong id="compare-diff">0</strong>
+              </article>
+              <article class="metric-card soft">
+                <span>Diferență %</span>
+                <strong id="compare-percent">0%</strong>
+              </article>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="profile-view" class="view">
+        <div class="profile-layout">
+          <section class="card">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">PROFIL</p>
+                <h3>Datele tale</h3>
+              </div>
+            </div>
+            <form id="profile-form" class="stack">
+              <div class="grid two">
+                <label>Prenume<input id="profile-first" maxlength="80" required></label>
+                <label>Nume<input id="profile-last" maxlength="80" required></label>
+                <label>Email<input id="profile-email" disabled></label>
+                <label>Tarif brut / oră<input id="profile-rate" type="number" min="0" step="0.01" required></label>
+                <label>Monedă<select id="profile-currency"><option value="EUR">EUR</option></select></label>
+                <label>Pauză implicită<select id="profile-break"><option value="0">0 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></label>
+                <label>Limbă<select id="profile-language"><option value="ro">Română</option><option value="de">Deutsch</option><option value="en">English</option></select></label>
+              </div>
+              <p id="profile-error" class="error"></p>
+              <button class="btn primary" type="submit">Salvează profilul</button>
+            </form>
+          </section>
+
+          <section class="card">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">TIPURI DE ACTIVITATE</p>
+                <h3>Lista personală</h3>
+              </div>
+            </div>
+            <form id="work-type-form" class="stack compact">
+              <div class="grid two">
+                <input id="work-type-id" type="hidden">
+                <label>Nume<input id="work-type-name" maxlength="100" required></label>
+                <label>Cod<input id="work-type-code" maxlength="30" required></label>
+                <label>Culoare<input id="work-type-color" type="color" value="#3B82F6" required></label>
+                <label>Tarif personalizat<input id="work-type-rate" type="number" min="0" step="0.01"></label>
+                <label>Pauză implicită<select id="work-type-break"><option value="0">0 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></label>
+              </div>
+              <div class="inline-actions">
+                <button class="btn primary small" type="submit">Salvează tipul</button>
+                <button class="btn ghost small" id="reset-work-type" type="button">Resetează</button>
+              </div>
+            </form>
+            <div id="work-types-list" class="entries-list"></div>
+          </section>
+
+          <section class="card">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">EXPORT</p>
+                <h3>Descarcă datele</h3>
+              </div>
+            </div>
+            <div class="inline-actions">
+              <button id="export-month-csv" class="btn ghost small" type="button">CSV luna curentă</button>
+              <button id="export-year-csv" class="btn ghost small" type="button">CSV anul curent</button>
+              <button id="export-month-xlsx" class="btn ghost small" type="button">Excel luna curentă</button>
+              <button id="export-year-xlsx" class="btn ghost small" type="button">Excel anul curent</button>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">SECURITATE</p>
+                <h3>Parolă și cont</h3>
+              </div>
+            </div>
+            <form id="password-form" class="stack compact">
+              <label>Parola actuală<input id="current-password" type="password" minlength="8" required></label>
+              <label>Parola nouă<input id="new-password" type="password" minlength="8" required></label>
+              <p id="password-error" class="error"></p>
+              <div class="inline-actions">
+                <button class="btn primary small" type="submit">Schimbă parola</button>
+                <button class="btn ghost small" id="delete-account" type="button">Dezactivează contul</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      </section>
     </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-link active" data-view="today">Astăzi</button>
+      <button class="nav-link" data-view="calendar">Calendar</button>
+      <button class="nav-link" data-view="chat">Chat</button>
+      <button class="nav-link" data-view="statistics">Statistici</button>
+      <button class="nav-link" data-view="profile">Profil</button>
+    </nav>
   </div>
 
-  <dialog id="log-dialog"><form id="log-form"><div class="dialog-head"><div><p class="kicker">CALCULATOR ORE ȘI BANI</p><h2>Adaugă activitate</h2></div><button type="button" id="close-dialog">×</button></div><label>Tip activitate</label><select id="work-type" required></select><label>Data</label><input id="work-date" type="date" required><div id="hour-fields" class="field-grid"><div><label>De la</label><input id="start-time" type="time"></div><div><label>Până la</label><input id="end-time" type="time"></div><div><label>Pauză</label><select id="break-minutes"><option value="0">Fără pauză</option><option value="30">30 minute</option><option value="45">45 minute</option></select></div></div><div id="room-fields" class="hidden"><div class="field-grid"><div><label>Normal</label><input id="normal-rooms" type="number" min="0" value="0"></div><div><label>Junior Suite</label><input id="junior-rooms" type="number" min="0" value="0"></div><div><label>President</label><input id="president-rooms" type="number" min="0" value="0"></div></div><label>Fotografia listei</label><input id="room-photo" type="file" accept="image/*" capture="environment"><small class="muted">Camerele sunt convertite direct în ore. Nu se scade pauză.</small></div><div class="calculation-preview"><span>Rezultat estimat</span><strong id="preview-hours">0,00 ore</strong><b id="preview-money">0,00 € brut</b></div><label>Observații</label><textarea id="notes" rows="3" maxlength="500" placeholder="Opțional"></textarea><p id="log-error" class="error"></p><div class="dialog-actions"><button type="button" id="cancel-dialog" class="btn ghost">Renunță</button><button type="submit" class="btn primary">Salvează</button></div></form></dialog>
+  <dialog id="entry-dialog" class="modal">
+    <form id="entry-form" class="stack">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">ACTIVITATE</p>
+          <h3 id="entry-title">Adaugă activitate</h3>
+        </div>
+        <button class="icon-btn" type="button" id="close-entry">×</button>
+      </div>
+      <input id="entry-id" type="hidden">
+      <div class="grid two">
+        <label>Data<input id="entry-date" type="date" required></label>
+        <label>Tip activitate<select id="entry-work-type" required></select></label>
+        <label>Ora de început<input id="entry-start" type="time" required></label>
+        <label>Ora de sfârșit<input id="entry-end" type="time" required></label>
+        <label>Pauză<select id="entry-break"><option value="0">0 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></label>
+      </div>
+      <label>Observație
+        <textarea id="entry-notes" rows="3" maxlength="500" placeholder="Opțional"></textarea>
+      </label>
+      <div class="preview card soft-card">
+        <span>Rezultat în timp real</span>
+        <strong id="entry-hours-preview">0 h</strong>
+        <small id="entry-gross-preview">0 € brut estimat</small>
+      </div>
+      <p id="entry-error" class="error"></p>
+      <div class="inline-actions right">
+        <button class="btn ghost" type="button" id="cancel-entry">Renunță</button>
+        <button class="btn primary" type="submit">Salvează</button>
+      </div>
+    </form>
+  </dialog>
 
-  <dialog id="plan-dialog"><form id="plan-form"><div class="dialog-head"><div><p class="kicker">PLANIFICARE</p><h2>Adaugă în plan</h2></div><button type="button" id="close-plan">×</button></div><label>Angajați</label><div id="employee-checks" class="employee-checks"></div><label>Tipul zilei</label><select id="shift-kind"><option value="WORK">Activitate</option><option value="FREE">Liber (F)</option><option value="VACATION">Concediu (U)</option><option value="SICK">Medical (K)</option></select><div id="plan-work-fields"><label>Activitate</label><select id="plan-work-type"></select><div class="field-grid"><div><label>De la</label><input id="plan-start" type="time"></div><div><label>Până la</label><input id="plan-end" type="time"></div></div></div><label>Data</label><input id="plan-date" type="date" required><label>Observații</label><textarea id="plan-notes" rows="2"></textarea><p id="plan-error" class="error"></p><div class="dialog-actions"><button type="button" id="cancel-plan" class="btn ghost">Renunță</button><button type="submit" class="btn primary">Publică planul</button></div></form></dialog>
+  <dialog id="register-dialog" class="modal small">
+    <form id="register-form" class="stack">
+      <div class="section-head"><div><p class="eyebrow">CONT NOU</p><h3>Creează cont</h3></div><button class="icon-btn" type="button" id="close-register">×</button></div>
+      <label>Email<input id="register-email" type="email" required></label>
+      <label>Parolă<input id="register-password" type="password" minlength="8" required></label>
+      <label>Confirmă parola<input id="register-confirm-password" type="password" minlength="8" required></label>
+      <div id="register-code-box" class="soft-card hidden"><strong>Cod confirmare</strong><span id="register-demo-code"></span></div>
+      <p id="register-error" class="error"></p>
+      <div class="inline-actions right">
+        <button class="btn ghost" type="button" id="cancel-register">Renunță</button>
+        <button class="btn primary" type="submit">Creează cont</button>
+      </div>
+    </form>
+  </dialog>
 
-  <dialog id="notifications-dialog"><div class="dialog-head"><div><p class="kicker">ACTUALIZĂRI</p><h2>Notificări</h2></div><button type="button" id="close-notifications">×</button></div><div id="notifications-list" class="notification-list"></div></dialog>
-  <dialog id="register-dialog" class="auth-dialog"><form id="register-form"><div class="dialog-head"><div><p class="kicker">CONT NOU</p><h2>Creează firma</h2><p class="muted">Primul cont devine angajator și creează spațiul firmei.</p></div><button type="button" id="close-register">×</button></div><div class="auth-grid"><div><label>Username</label><input id="register-username" required minlength="3" placeholder="ex: eusebiu"></div><div><label>Email</label><input id="register-email" type="email" required placeholder="nume@email.com"></div><div><label>Prenume</label><input id="register-first" placeholder="Eusebiu"></div><div><label>Nume</label><input id="register-last" placeholder="Jacot"></div><div><label>Nume hotel / firmă</label><input id="register-hotel" value="Infinity Hotel"></div><div><label>Oraș</label><input id="register-city" value="Unterschleißheim"></div></div><label>Parolă</label><input id="register-password" type="password" minlength="8" required placeholder="minimum 8 caractere"><p id="register-error" class="error"></p><div id="register-code-box" class="demo-box hidden"><strong>Cod confirmare</strong><span id="register-demo-code"></span></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancel-register">Renunță</button><button class="btn primary">Creează cont</button></div></form></dialog>
-  <dialog id="confirm-dialog" class="auth-dialog small-auth-dialog"><form id="confirm-form"><div class="dialog-head"><div><p class="kicker">CONFIRMARE EMAIL</p><h2>Introdu codul</h2></div><button type="button" id="close-confirm">×</button></div><p class="muted">Codul este valabil 30 de minute.</p><label>Cod confirmare</label><input id="confirm-code" inputmode="numeric" required placeholder="123456"><p id="confirm-error" class="error"></p><button class="btn primary wide">Confirmă contul <b>→</b></button></form></dialog>
-  <dialog id="reset-dialog" class="auth-dialog small-auth-dialog"><form id="reset-form"><div class="dialog-head"><div><p class="kicker">RESETARE PAROLĂ</p><h2>Recuperează contul</h2></div><button type="button" id="close-reset">×</button></div><label>Email, telefon sau username</label><input id="reset-login" required placeholder="email sau username"><p id="reset-error" class="error"></p><div id="reset-code-box" class="demo-box hidden"><strong>Cod resetare</strong><span id="reset-demo-code"></span></div><label>Cod</label><input id="reset-code" inputmode="numeric" placeholder="123456"><label>Parolă nouă</label><input id="reset-password" type="password" minlength="8" placeholder="minimum 8 caractere"><div class="dialog-actions"><button type="button" class="btn ghost" id="request-reset-code">Trimite cod</button><button class="btn primary">Schimbă parola</button></div></form></dialog>
-  <dialog id="employee-dialog"><form id="employee-form" class="admin-form"><div class="dialog-head"><div><p class="kicker">CONT ANGAJAT</p><h2 id="employee-dialog-title">Angajat nou</h2></div><button type="button" id="close-employee-dialog">×</button></div><input id="employee-id" type="hidden"><div class="field-grid"><div><label>Username</label><input id="employee-username" required></div><div><label>Rol</label><select id="employee-role"><option value="EMPLOYEE">Angajat</option><option value="CHECKER">Checker</option><option value="MANAGER">Manager</option><option value="EMPLOYER">Angajator</option></select></div><div><label>Prenume</label><input id="employee-first"></div><div><label>Nume</label><input id="employee-last"></div><div><label>Email</label><input id="employee-email" type="email"></div><div><label>Telefon</label><input id="employee-phone"></div><div><label>Tarif/oră</label><input id="employee-rate" type="number" step="0.01" min="0" value="16.00"></div><div><label>Steuerklasse</label><select id="employee-tax"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></div></div><label>Adresă</label><input id="employee-address"><label>Echipă / hotel</label><input id="employee-team" placeholder="Infinity Unterschleißheim"><label>Parolă temporară</label><input id="employee-temp-password" placeholder="opțional"><p id="employee-error" class="error"></p><button class="btn primary wide">Salvează</button></form></dialog>
-  <div id="toast" class="toast"></div><script src="/annual-chart.js?v=13" defer></script><script src="/plan-correction.js?v=7" defer></script><script src="/week-slider.js?v=6" defer></script><script src="/detailed-calendars.js?v=5" defer></script><script src="/employee-portal.js?v=1" defer></script><script src="/employee-rooms.js?v=1" defer></script><script src="/manager-workflow.js?v=1" defer></script><script src="/admin-checker.js?v=1" defer></script><script src="/app.js?v=16" defer></script>
-</body></html>
+  <dialog id="confirm-dialog" class="modal small">
+    <form id="confirm-form" class="stack">
+      <div class="section-head"><div><p class="eyebrow">CONFIRMARE</p><h3>Introdu codul</h3></div><button class="icon-btn" type="button" id="close-confirm">×</button></div>
+      <label>Cod confirmare<input id="confirm-code" inputmode="numeric" required></label>
+      <p id="confirm-error" class="error"></p>
+      <button class="btn primary" type="submit">Confirmă contul</button>
+    </form>
+  </dialog>
+
+  <dialog id="reset-dialog" class="modal small">
+    <form id="reset-form" class="stack">
+      <div class="section-head"><div><p class="eyebrow">RESETARE PAROLĂ</p><h3>Recuperează contul</h3></div><button class="icon-btn" type="button" id="close-reset">×</button></div>
+      <label>Email sau username<input id="reset-login" required></label>
+      <button class="btn ghost small" type="button" id="request-reset-code">Trimite cod</button>
+      <div id="reset-code-box" class="soft-card hidden"><strong>Cod resetare</strong><span id="reset-demo-code"></span></div>
+      <label>Cod<input id="reset-code" inputmode="numeric"></label>
+      <label>Parolă nouă<input id="reset-password" type="password" minlength="8"></label>
+      <p id="reset-error" class="error"></p>
+      <button class="btn primary" type="submit">Schimbă parola</button>
+    </form>
+  </dialog>
+
+  <dialog id="onboarding-dialog" class="modal">
+    <form id="onboarding-form" class="stack">
+      <div class="section-head"><div><p class="eyebrow">CONFIGURARE INIȚIALĂ</p><h3>Completează profilul</h3></div></div>
+      <div class="grid two">
+        <label>Prenume<input id="onboarding-first" maxlength="80" required></label>
+        <label>Nume<input id="onboarding-last" maxlength="80" required></label>
+        <label>Tarif brut / oră<input id="onboarding-rate" type="number" min="0" step="0.01" required></label>
+        <label>Monedă<select id="onboarding-currency"><option value="EUR">EUR</option></select></label>
+        <label>Pauză implicită<select id="onboarding-break"><option value="0">0 min</option><option value="15">15 min</option><option value="30" selected>30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></label>
+        <label>Limbă<select id="onboarding-language"><option value="ro">Română</option><option value="de">Deutsch</option><option value="en">English</option></select></label>
+      </div>
+      <p id="onboarding-error" class="error"></p>
+      <button class="btn primary" type="submit">Salvează și continuă</button>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+  <script src="/app.js?v=20260710-1" defer></script>
+</body>
+</html>

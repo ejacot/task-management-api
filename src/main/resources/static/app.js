@@ -1,44 +1,684 @@
-const state={auth:sessionStorage.getItem('roomly.auth'),token:sessionStorage.getItem('roomly.token'),data:null,management:null};
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-async function api(path,options={}){const headers={'Content-Type':'application/json',...(options.headers||{})};if(state.token)headers.Authorization=`Bearer ${state.token}`;else if(state.auth)headers.Authorization=`Basic ${state.auth}`;const r=await fetch(path,{...options,headers});if(!r.ok){let b={};try{b=await r.json()}catch{}throw new Error(b.message||`Eroare ${r.status}`)}return r.status===204?null:r.json()}
-const money=n=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(n||0);const date=d=>new Intl.DateTimeFormat('ro-RO',{day:'2-digit',month:'short'}).format(new Date(`${d}T12:00:00`));const day=d=>new Intl.DateTimeFormat('ro-RO',{weekday:'short'}).format(new Date(`${d}T12:00:00`)).replace('.','').toUpperCase();const time=t=>t?t.slice(0,5):'—';
-function toast(m){$('#toast').textContent=m;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2200)}
-async function load(){state.data=await api('/api/hotel/bootstrap');if(state.data.me.role!=='EMPLOYEE')state.management=await api('/api/management/overview');render();showApp();window.renderAnnualChart?.(state.data);window.setupPlanCorrections?.(state.data);window.setupWeekSlider?.(state.data);window.setupDetailedCalendars?.(state.data);window.setupEmployeePortal?.(state.data);window.setupEmployeeRooms?.(state.data);window.setupManagerWorkflow?.(state.data,state.management);window.setupAdminChecker?.(state.data,state.management)}
-function showApp(){$('#login-view').classList.add('hidden');$('#app').classList.remove('hidden')}
-function render(){const d=state.data,m=d.me;$('#hotel-name').textContent=d.hotel.name;$('#hotel-city').textContent=d.hotel.city;$('#first-name').textContent=m.firstName||m.username[0].toUpperCase()+m.username.slice(1);$('#side-name').textContent=[m.firstName,m.lastName].filter(Boolean).join(' ')||m.username;$('#side-role').textContent={EMPLOYEE:'Angajat',MANAGER:'Manager',CHECKER:'Checker',EMPLOYER:'Angajator'}[m.role];$('#today-label').textContent=new Intl.DateTimeFormat('ro-RO',{weekday:'long',day:'numeric',month:'long'}).format(new Date()).toUpperCase();$('#metric-hours').textContent=Number(d.metrics.monthHours).toFixed(1);$('#metric-rooms').textContent=d.metrics.rooms;$('#metric-gross').textContent=money(d.metrics.gross);$('#metric-net').textContent=money(d.metrics.estimatedNet);$('#management-nav').classList.toggle('hidden',m.role==='EMPLOYEE');$('#checker-nav')?.classList.toggle('hidden',!['CHECKER','MANAGER','EMPLOYER'].includes(m.role));$('#admin-nav')?.classList.toggle('hidden',!['MANAGER','EMPLOYER'].includes(m.role));$('#open-plan').classList.toggle('hidden',m.role==='CHECKER');$('.bell b').textContent=d.notifications.filter(n=>!n.read).length;renderNext();renderPlans();renderCalendar();renderLogs();renderSettings();renderNotifications();fillTypes();if(state.management)renderManagement()}
-const planLabel=p=>p.kind==='WORK'?(p.workType||'Activitate'):{FREE:'Liber',VACATION:'Concediu',SICK:'Medical'}[p.kind];
-function renderNext(){const p=state.data.plans.find(x=>x.date>=new Date().toISOString().slice(0,10))||state.data.plans[0],el=$('#next-shift');if(!p){el.classList.add('hidden');return}el.classList.remove('hidden');el.querySelector('.shift-date strong').textContent=date(p.date);el.querySelector('.shift-main small').textContent=day(p.date);el.querySelector('.shift-main h3').textContent=planLabel(p);el.querySelector('.shift-main p').textContent=p.notes||'Plan confirmat';el.querySelector('.shift-time').textContent=p.kind==='WORK'?`${time(p.startTime)} – ${time(p.endTime)}`:''}
-function renderPlans(){const html=state.data.plans.map(p=>`<div class="week-row"><div class="week-day"><strong>${date(p.date)}</strong><small>${day(p.date)}</small></div><div class="work-label"><i class="dot" style="background:${p.color}"></i><div><strong>${planLabel(p)}</strong><small>${p.notes||'Planificat'}</small></div></div><span class="week-time">${p.kind==='WORK'?`${time(p.startTime)}–${time(p.endTime)}`:''}</span></div>`).join('')||'<p class="muted">Nu există planificări.</p>';$('#week-list').innerHTML=html;$('#full-plan').innerHTML=state.data.plans.map(p=>`<article class="plan-card"><div class="week-day"><strong>${date(p.date)}</strong><small>${day(p.date)}</small></div><i class="bar" style="background:${p.color}"></i><div><h3>${planLabel(p)}</h3><p>${p.notes||'Planificat'} · ${p.status}</p></div><span class="week-time">${p.kind==='WORK'?`${time(p.startTime)} – ${time(p.endTime)}`:''}</span></article>`).join('')||'<p class="muted">Nu există planificări.</p>'}
-function isoLocal(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-function plannedHours(p){if(p.kind!=='WORK'||!p.startTime||!p.endTime)return 0;const [sh,sm]=p.startTime.split(':').map(Number),[eh,em]=p.endTime.split(':').map(Number);const type=state.data.workTypes.find(t=>t.name===p.workType);return Math.max(0,((eh*60+em)-(sh*60+sm)-(type?.defaultBreakMinutes||0))/60)}
-function renderCalendar(){const now=new Date(),monday=new Date(now);monday.setHours(12,0,0,0);monday.setDate(now.getDate()-((now.getDay()+6)%7));const cells=[];for(let i=0;i<14;i++){const current=new Date(monday);current.setDate(monday.getDate()+i);const key=isoLocal(current),events=state.data.plans.filter(p=>p.date===key);cells.push(`<article class="calendar-day ${i>=7?'next-week':''} ${key===isoLocal(now)?'today':''}"><div class="date"><span>${new Intl.DateTimeFormat('ro-RO',{weekday:'short'}).format(current)}</span><strong>${current.getDate()}</strong></div>${events.map(p=>`<div class="calendar-event ${p.kind==='WORK'?'':'absence'}" style="border-color:${p.color}"><strong>${planLabel(p)}</strong><span>${p.kind==='WORK'?`${time(p.startTime)}–${time(p.endTime)}`:''}</span></div>`).join('')||'<small class="muted">Fără plan</small>'}</article>`)}$('#employee-calendar').innerHTML=cells.join('');$('#this-week-hours').textContent=state.data.plans.filter(p=>p.date>=isoLocal(monday)&&p.date<isoLocal(new Date(monday.getFullYear(),monday.getMonth(),monday.getDate()+7))).reduce((s,p)=>s+plannedHours(p),0).toFixed(1)+'h';const nextStart=new Date(monday);nextStart.setDate(monday.getDate()+7),nextEnd=new Date(monday);nextEnd.setDate(monday.getDate()+14);$('#next-week-hours').textContent=state.data.plans.filter(p=>p.date>=isoLocal(nextStart)&&p.date<isoLocal(nextEnd)).reduce((s,p)=>s+plannedHours(p),0).toFixed(1)+'h'}
-function updateCalculation(){if(!state.data)return;const type=selectedType();let hours=0;if(type?.unit==='ROOMS'){const h=state.data.hotel;hours=Number($('#normal-rooms').value||0)/Number(h.normalRoomsPerHour)+Number($('#junior-rooms').value||0)/Number(h.juniorRoomsPerHour)+Number($('#president-rooms').value||0)/Number(h.presidentRoomsPerHour)}else if($('#start-time').value&&$('#end-time').value){const [sh,sm]=$('#start-time').value.split(':').map(Number),[eh,em]=$('#end-time').value.split(':').map(Number);hours=Math.max(0,((eh*60+em)-(sh*60+sm)-Number($('#break-minutes').value||0))/60)}$('#preview-hours').textContent=hours.toLocaleString('ro-RO',{minimumFractionDigits:2,maximumFractionDigits:2})+' ore';$('#preview-money').textContent=money(hours*Number(state.data.me.hourlyRate))+' brut'}
-function roomDetails(l){if(l.unit!=='ROOMS')return `${time(l.startTime)}–${time(l.endTime)}`;const parts=[];if(l.normalRooms)parts.push(`${l.normalRooms} Normal`);if(l.juniorRooms)parts.push(`${l.juniorRooms} Junior`);if(l.presidentRooms)parts.push(`${l.presidentRooms} President`);return parts.join(' · ')||`${l.quantity||0} camere`}
-function renderLogs(){const rows=state.data.logs;$('#recent-list').innerHTML=rows.slice(0,5).map(l=>`<div class="recent-row"><div><strong>${l.workType}</strong><small>${date(l.date)} · ${roomDetails(l)}</small></div><span class="hours">${Number(l.hours).toFixed(2)}h</span></div>`).join('')||'<p class="muted">Nicio activitate.</p>';$('#history-list').innerHTML=rows.map(l=>`<div class="history-row"><span>${date(l.date)}</span><strong>${l.workType}${l.hasAttachment?' <i class="photo-flag">▧</i>':''}</strong><span>${roomDetails(l)}</span><strong>${Number(l.hours).toFixed(2)} h</strong><span><i class="badge status-${l.status}">${{DRAFT:'Ciornă',SUBMITTED:'Trimis',APPROVED:'Aprobat',REJECTED:'Respins'}[l.status]}</i>${l.status==='DRAFT'?` <button class="text-btn" data-submit-log="${l.id}">Trimite</button>`:''}</span></div>`).join('')||'<p class="muted" style="padding:20px">Nicio activitate.</p>'}
-function renderSettings(){const d=state.data,m=d.me;$('#profile-details').innerHTML=`<div><small>Nume și prenume</small><strong class="profile-value">${[m.firstName,m.lastName].filter(Boolean).join(' ')||'—'}</strong></div><div><small>Username</small><strong>${m.username}</strong></div><div><small>E-mail</small><strong class="profile-value">${m.email||'—'}</strong></div><div><small>Telefon</small><strong>${m.phone||'—'}</strong></div><div><small>Adresă</small><strong class="profile-value">${m.address||'—'}</strong></div><div><small>Steuerklasse</small><strong>${m.steuerClass||'—'}</strong></div><div><small>Tarif brut/oră</small><strong>${money(m.hourlyRate)}</strong></div><div><small>Hotel</small><strong>${d.hotel.name}</strong></div>`;$('#work-types').innerHTML=d.workTypes.map(t=>`<div class="type-item"><i style="background:${t.color}"></i><div><strong>${t.name}</strong><small>${t.unit==='ROOMS'?`${t.roomsPerHour||'configurabil'} camere/oră`:`${t.defaultStartTime?time(t.defaultStartTime)+'–'+time(t.defaultEndTime):'Plată la oră'}${t.defaultBreakMinutes?' · pauză '+t.defaultBreakMinutes+' min':''}`}</small></div><span>${t.code}</span></div>`).join('')}
-function renderNotifications(){$('#notifications-list').innerHTML=state.data.notifications.map(n=>`<article class="notification-item ${n.read?'':'unread'}" data-notification="${n.id}" data-link="${n.link||''}"><strong>${n.title}</strong><p>${n.message}</p><small>${new Intl.DateTimeFormat('ro-RO',{dateStyle:'medium',timeStyle:'short'}).format(new Date(n.createdAt))}</small></article>`).join('')||'<p class="muted">Nu ai notificări.</p>'}
-function fillTypes(){$('#work-type').innerHTML=state.data.workTypes.map(t=>`<option value="${t.id}" data-unit="${t.unit}">${t.name}</option>`).join('');$('#plan-work-type').innerHTML=$('#work-type').innerHTML;toggleFields()}
-function selectedType(){return state.data.workTypes.find(t=>t.id===Number($('#work-type').value))}
-function toggleFields(){const type=selectedType(),rooms=type?.unit==='ROOMS';$('#room-fields').classList.toggle('hidden',!rooms);$('#hour-fields').classList.toggle('hidden',rooms);if(!rooms&&type){$('#start-time').value=type.defaultStartTime?time(type.defaultStartTime):'';$('#end-time').value=type.defaultEndTime?time(type.defaultEndTime):'';$('#break-minutes').value=String(type.defaultBreakMinutes||0)}updateCalculation()}
-function renderManagement(){const m=state.management,employees=m.employees.filter(e=>e.role==='EMPLOYEE'),now=new Date(),monday=new Date(now);monday.setHours(12,0,0,0);monday.setDate(now.getDate()-((now.getDay()+6)%7));const days=Array.from({length:7},(_,i)=>{const d=new Date(monday);d.setDate(monday.getDate()+i);return d}),byEmployee=new Map();m.plans.filter(p=>p.date>=isoLocal(monday)&&p.date<=isoLocal(days[6])).forEach(p=>{const key=`${p.employeeId}|${p.date}`;if(!byEmployee.has(key))byEmployee.set(key,[]);byEmployee.get(key).push(p)});const header=`<div class="schedule-head"><div class="employee-col">Angajat</div>${days.map(d=>`<div class="day-col ${isoLocal(d)===isoLocal(now)?'today':''}"><strong>${new Intl.DateTimeFormat('ro-RO',{weekday:'short'}).format(d)}</strong><span>${new Intl.DateTimeFormat('ro-RO',{day:'2-digit',month:'2-digit'}).format(d)}</span></div>`).join('')}</div>`;const rows=employees.map(e=>`<div class="schedule-row"><div class="employee-col"><span class="mini-avatar">${(e.displayName||e.username)[0]}</span><div><strong>${e.displayName||e.username}</strong><small>Angajat</small></div></div>${days.map(d=>{const items=byEmployee.get(`${e.id}|${isoLocal(d)}`)||[];return `<div class="schedule-cell ${isoLocal(d)===isoLocal(now)?'today':''}">${items.map(p=>`<div class="shift-chip kind-${p.kind}" style="--shift:${p.color}"><strong>${planLabel(p)}</strong>${p.kind==='WORK'?`<span>${time(p.startTime)}–${time(p.endTime)}</span>`:''}${p.notes?`<small>${p.notes}</small>`:''}</div>`).join('')||'<span class="empty-shift">—</span>'}</div>`}).join('')}</div>`).join('');$('#team-plan').innerHTML=`<div class="schedule-grid">${header}${rows}</div>`;$('#schedule-week').textContent=`${date(isoLocal(monday))} – ${date(isoLocal(days[6]))}`;$('#team-count').textContent=employees.length;$('#planned-count').textContent=m.plans.filter(p=>p.kind==='WORK'&&p.date>=isoLocal(monday)&&p.date<=isoLocal(days[6])).length;$('#free-count').textContent=m.plans.filter(p=>p.kind!=='WORK'&&p.date>=isoLocal(monday)&&p.date<=isoLocal(days[6])).length;$('#pending-count').textContent=m.pendingLogs.length;$('#pending-list').innerHTML=m.pendingLogs.map(l=>`<article class="pending-item"><h3>${l.employee} · ${l.workType}</h3><p>${date(l.date)} · ${roomDetails(l)} · ${Number(l.hours).toFixed(2)} ore</p><div class="review-actions">${l.hasAttachment?`<button class="ghost btn" data-attachment="${l.id}">Vezi lista</button>`:''}<button class="approve" data-review="${l.id}" data-approved="true">Aprobă</button><button class="reject" data-review="${l.id}" data-approved="false">Respinge</button></div></article>`).join('')||'<p class="muted">Nu există activități în așteptare.</p>';$('#employee-checks').innerHTML=employees.map(e=>`<label><input type="checkbox" value="${e.id}">${e.displayName||e.username}</label>`).join('')}
-function navigate(id){$$('.view').forEach(v=>v.classList.toggle('active-view',v.id===id));$$('.nav').forEach(n=>n.classList.toggle('active',n.dataset.view===id));$('.sidebar').classList.remove('open')}
-$('#login-form').addEventListener('submit',async e=>{e.preventDefault();$('#login-error').textContent='';try{const response=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({login:$('#login').value.trim(),password:$('#password').value})});if(!response.ok)throw new Error();const body=await response.json();state.token=body.token;state.auth=btoa(`${$('#login').value.trim()}:${$('#password').value}`);sessionStorage.setItem('roomly.token',state.token);sessionStorage.setItem('roomly.auth',state.auth);await load()}catch(err){state.auth=null;state.token=null;sessionStorage.clear();$('#login-error').textContent='Contul sau parola nu sunt corecte.'}});
-$('#open-register').addEventListener('click',()=>{$('#register-form').reset();$('#register-hotel').value='Infinity Hotel';$('#register-city').value='Unterschleißheim';$('#register-code-box').classList.add('hidden');$('#register-error').textContent='';$('#register-dialog').showModal()});
-$('#close-register').addEventListener('click',()=>$('#register-dialog').close());$('#cancel-register').addEventListener('click',()=>$('#register-dialog').close());
-$('#register-form').addEventListener('submit',async e=>{e.preventDefault();$('#register-error').textContent='';try{const response=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:$('#register-username').value.trim(),email:$('#register-email').value.trim(),firstName:$('#register-first').value.trim()||null,lastName:$('#register-last').value.trim()||null,hotelName:$('#register-hotel').value.trim()||null,city:$('#register-city').value.trim()||null,password:$('#register-password').value})});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||'Nu am putut crea contul.');if(body.demoCode){$('#register-demo-code').textContent=body.demoCode;$('#register-code-box').classList.remove('hidden');$('#confirm-code').value=body.demoCode}toast('Cont creat. Confirmă codul primit.');$('#confirm-dialog').showModal()}catch(err){$('#register-error').textContent=err.message}});
-$('#close-confirm').addEventListener('click',()=>$('#confirm-dialog').close());
-$('#confirm-form').addEventListener('submit',async e=>{e.preventDefault();$('#confirm-error').textContent='';try{const response=await fetch('/api/auth/register/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:$('#confirm-code').value.trim()})});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||'Cod invalid.');$('#confirm-dialog').close();$('#register-dialog').close();$('#login').value=$('#register-username').value.trim();$('#password').value='';toast('Email confirmat. Te poți autentifica.')}catch(err){$('#confirm-error').textContent=err.message}});
-$('#open-reset').addEventListener('click',()=>{$('#reset-form').reset();$('#reset-code-box').classList.add('hidden');$('#reset-error').textContent='';$('#reset-login').value=$('#login').value.trim();$('#reset-dialog').showModal()});
-$('#close-reset').addEventListener('click',()=>$('#reset-dialog').close());
-$('#request-reset-code').addEventListener('click',async()=>{$('#reset-error').textContent='';try{const response=await fetch('/api/auth/password-reset/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({login:$('#reset-login').value.trim()})});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||'Nu am putut genera codul.');if(body.demoCode){$('#reset-demo-code').textContent=body.demoCode;$('#reset-code').value=body.demoCode;$('#reset-code-box').classList.remove('hidden')}toast('Codul de resetare a fost generat.')}catch(err){$('#reset-error').textContent=err.message}});
-$('#reset-form').addEventListener('submit',async e=>{e.preventDefault();$('#reset-error').textContent='';try{const response=await fetch('/api/auth/password-reset/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:$('#reset-code').value.trim(),newPassword:$('#reset-password').value})});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||'Nu am putut schimba parola.');$('#reset-dialog').close();toast('Parola a fost schimbată. Te poți autentifica.')}catch(err){$('#reset-error').textContent=err.message}});
-$$('.nav').forEach(n=>n.addEventListener('click',()=>navigate(n.dataset.view)));$$('[data-go]').forEach(n=>n.addEventListener('click',()=>navigate(n.dataset.go)));$('#menu').addEventListener('click',()=>$('.sidebar').classList.toggle('open'));$('#logout').addEventListener('click',()=>{sessionStorage.clear();location.reload()});
-function openLog(){$('#log-form').reset();$('#work-date').value=isoLocal(new Date());$('#log-error').textContent='';fillTypes();updateCalculation();$('#log-dialog').showModal()}$$('[data-open-log]').forEach(b=>b.addEventListener('click',openLog));$('#close-dialog').addEventListener('click',()=>$('#log-dialog').close());$('#cancel-dialog').addEventListener('click',()=>$('#log-dialog').close());$('#work-type').addEventListener('change',toggleFields);['#normal-rooms','#junior-rooms','#president-rooms','#start-time','#end-time','#break-minutes'].forEach(id=>$(id).addEventListener('input',updateCalculation));
-const fileData=file=>new Promise((resolve,reject)=>{if(!file)return resolve(null);if(file.size>2_500_000)return reject(new Error('Fotografia trebuie să fie mai mică de 2,5 MB.'));const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file)});
-$('#log-form').addEventListener('submit',async e=>{e.preventDefault();const type=state.data.workTypes.find(t=>t.id===Number($('#work-type').value));const body={workTypeId:type.id,workDate:$('#work-date').value,notes:$('#notes').value||null};if(type.unit==='ROOMS'){body.normalRooms=Number($('#normal-rooms').value||0);body.juniorRooms=Number($('#junior-rooms').value||0);body.presidentRooms=Number($('#president-rooms').value||0);const file=$('#room-photo').files[0];body.attachmentName=file?.name||null;body.attachmentData=await fileData(file)}else{body.startTime=$('#start-time').value;body.endTime=$('#end-time').value;body.breakMinutes=Number($('#break-minutes').value)}try{await api('/api/hotel/logs',{method:'POST',body:JSON.stringify(body)});$('#log-dialog').close();await load();toast('Activitatea a fost salvată')}catch(err){$('#log-error').textContent=err.message}});
-$('#history-list').addEventListener('click',async e=>{const id=e.target.dataset.submitLog;if(!id)return;await api(`/api/hotel/logs/${id}/submit`,{method:'PUT'});await load();toast('Activitatea a fost trimisă')});
-$('#open-plan').addEventListener('click',()=>{$('#plan-form').reset();$('#plan-date').value=new Date().toISOString().slice(0,10);$('#plan-dialog').showModal()});$('#close-plan').addEventListener('click',()=>$('#plan-dialog').close());$('#cancel-plan').addEventListener('click',()=>$('#plan-dialog').close());$('#shift-kind').addEventListener('change',()=>$('#plan-work-fields').classList.toggle('hidden',$('#shift-kind').value!=='WORK'));
-$('#plan-form').addEventListener('submit',async e=>{e.preventDefault();const employeeIds=$$('#employee-checks input:checked').map(x=>Number(x.value));const kind=$('#shift-kind').value;try{await api('/api/management/plans',{method:'POST',body:JSON.stringify({employeeIds,kind,workTypeId:kind==='WORK'?Number($('#plan-work-type').value):null,date:$('#plan-date').value,startTime:kind==='WORK'?$('#plan-start').value:null,endTime:kind==='WORK'?$('#plan-end').value:null,notes:$('#plan-notes').value||null})});$('#plan-dialog').close();await load();toast('Planul a fost publicat')}catch(err){$('#plan-error').textContent=err.message}});
-$('#pending-list').addEventListener('click',async e=>{const attachment=e.target.dataset.attachment;if(attachment){const file=await api(`/api/management/logs/${attachment}/attachment`);window.open(file.data,'_blank');return}const id=e.target.dataset.review;if(!id)return;const approved=e.target.dataset.approved==='true';const reason=approved?null:prompt('Motivul respingerii:');if(!approved&&!reason)return;await api(`/api/management/logs/${id}/review`,{method:'PUT',body:JSON.stringify({approved,reason})});await load();toast(approved?'Activitate aprobată':'Activitate respinsă')});
-$('.bell').addEventListener('click',()=>$('#notifications-dialog').showModal());$('#close-notifications').addEventListener('click',()=>$('#notifications-dialog').close());$('#notifications-list').addEventListener('click',async e=>{const item=e.target.closest('[data-notification]');if(!item)return;await api(`/api/hotel/notifications/${item.dataset.notification}/read`,{method:'PUT'});$('#notifications-dialog').close();await load();if(item.dataset.link)navigate(item.dataset.link)});
-if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');if(state.auth)load().catch(()=>{sessionStorage.clear();state.auth=null});
+const state = {
+  token: sessionStorage.getItem('roomly.token'),
+  auth: {
+    pendingEmail: ''
+  },
+  app: null,
+  today: null,
+  calendar: null,
+  history: null,
+  statistics: null,
+  selectedDate: null,
+  selectedView: 'today'
+};
+
+const $ = selector => document.querySelector(selector);
+const $$ = selector => [...document.querySelectorAll(selector)];
+const monthNames = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
+
+async function api(path, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  if (!(options.body instanceof FormData)) headers['Content-Type'] = 'application/json';
+  if (state.token) headers.Authorization = `Bearer ${state.token}`;
+  const response = await fetch(path, { ...options, headers });
+  if (!response.ok) {
+    let body = {};
+    try { body = await response.json(); } catch {}
+    throw new Error(body.message || `Eroare ${response.status}`);
+  }
+  if (response.status === 204) return null;
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) return response.json();
+  return response.blob();
+}
+
+function toast(message) {
+  const el = $('#toast');
+  el.textContent = message;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function money(value) {
+  const amount = Number(value || 0);
+  const currency = state.app?.me?.currency || 'EUR';
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency }).format(amount);
+}
+
+function hours(value) {
+  return `${Number(value || 0).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} h`;
+}
+
+function dateLabel(date) {
+  return new Intl.DateTimeFormat('ro-RO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${date}T12:00:00`));
+}
+
+function formatShortDate(date) {
+  return new Intl.DateTimeFormat('ro-RO', { day: '2-digit', month: 'short' }).format(new Date(`${date}T12:00:00`));
+}
+
+function formatTime(time) {
+  return time ? time.slice(0, 5) : '—';
+}
+
+function isoToday() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+async function loadInitial() {
+  state.app = await api('/api/app/bootstrap');
+  state.today = await api('/api/work-entries/today');
+  const now = new Date();
+  state.selectedDate = state.selectedDate || isoToday();
+  await Promise.all([
+    loadCalendar(now.getFullYear(), now.getMonth() + 1),
+    loadHistory(),
+    loadStatistics()
+  ]);
+  renderApp();
+}
+
+async function loadCalendar(year, month) {
+  state.calendar = await api(`/api/work-entries/calendar?year=${year}&month=${month}`);
+  $('#calendar-year').value = String(year);
+  $('#calendar-month').value = String(month);
+}
+
+async function loadHistory() {
+  const year = $('#calendar-year')?.value || new Date().getFullYear();
+  const month = $('#calendar-month')?.value || (new Date().getMonth() + 1);
+  const workTypeId = $('#history-work-type')?.value || '';
+  const query = new URLSearchParams({ year, month });
+  if (workTypeId) query.set('workTypeId', workTypeId);
+  state.history = await api(`/api/work-entries?${query.toString()}`);
+}
+
+async function loadStatistics() {
+  const year = $('#stats-year')?.value || new Date().getFullYear();
+  const month = $('#stats-month')?.value || '';
+  const metric = $('#stats-metric')?.value || 'hours';
+  const workTypeId = $('#stats-work-type')?.value || '';
+  const summaryQuery = new URLSearchParams({ year });
+  if (month) summaryQuery.set('month', month);
+  if (workTypeId) summaryQuery.set('workTypeId', workTypeId);
+  const monthlyQuery = new URLSearchParams({ year, metric });
+  if (workTypeId) monthlyQuery.set('workTypeId', workTypeId);
+  const [summary, monthly] = await Promise.all([
+    api(`/api/statistics/summary?${summaryQuery.toString()}`),
+    api(`/api/statistics/monthly?${monthlyQuery.toString()}`)
+  ]);
+  state.statistics = { summary, monthly };
+}
+
+function showApp() {
+  $('#auth-screen').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+}
+
+function renderApp() {
+  showApp();
+  renderNavigation();
+  renderToday();
+  renderCalendarControls();
+  renderCalendar();
+  renderHistory();
+  renderStatisticsControls();
+  renderStatistics();
+  renderProfile();
+  renderWorkTypeOptions();
+}
+
+function renderNavigation() {
+  const me = state.app.me;
+  $('#sidebar-name').textContent = [me.firstName, me.lastName].filter(Boolean).join(' ') || me.email;
+  $('#sidebar-email').textContent = me.email;
+  navigate(state.selectedView);
+}
+
+function navigate(view) {
+  state.selectedView = view;
+  const titles = { today: 'Astăzi', calendar: 'Calendar', chat: 'Chat', statistics: 'Statistici', profile: 'Profil' };
+  $('#topbar-title').textContent = titles[view];
+  $$('.view').forEach(section => section.classList.toggle('active-view', section.id === `${view}-view`));
+  $$('.nav-link').forEach(button => button.classList.toggle('active', button.dataset.view === view));
+  $('.sidebar').classList.remove('open');
+}
+
+function renderToday() {
+  const today = state.today;
+  const me = state.app.me;
+  $('#today-date-label').textContent = dateLabel(today.date).toUpperCase();
+  $('#today-view h1').textContent = `Bun venit, ${me.firstName || me.email.split('@')[0]}`;
+  $('#today-empty-copy').textContent = today.entries.length ? 'Activitățile tale de astăzi sunt deja salvate mai jos.' : 'Nu ai adăugat nicio activitate pentru astăzi.';
+  $('#today-month-hours').textContent = hours(state.app.currentMonth.hoursWorked);
+  $('#today-month-days').textContent = state.app.currentMonth.daysWorked;
+  $('#today-month-gross').textContent = money(state.app.currentMonth.grossEstimated);
+  $('#today-entries').innerHTML = today.entries.length
+    ? today.entries.map(entryCard).join('')
+    : '<div class="entry-card"><p class="muted">Nicio activitate pentru astăzi.</p></div>';
+}
+
+function entryCard(entry) {
+  return `
+    <article class="entry-card">
+      <div class="entry-main">
+        <div>
+          <strong>${entry.workTypeName}</strong>
+          <div class="entry-meta">
+            <span>${formatShortDate(entry.date)}</span>
+            <span>${formatTime(entry.startTime)} – ${formatTime(entry.endTime)}</span>
+            <span>Pauză: ${entry.breakMinutes} min</span>
+          </div>
+        </div>
+        <div>
+          <strong>${hours(entry.hoursWorked)}</strong>
+          <div class="muted">${money(entry.grossAmount)}</div>
+        </div>
+      </div>
+      ${entry.notes ? `<p class="muted">${entry.notes}</p>` : ''}
+      <div class="inline-actions">
+        <button class="btn ghost small" data-edit-entry="${entry.id}">Editează</button>
+        <button class="btn ghost small" data-duplicate-entry="${entry.id}">Duplică</button>
+        <button class="btn ghost small" data-delete-entry="${entry.id}">Șterge</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderCalendarControls() {
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 6 }, (_, index) => currentYear - 2 + index);
+  const yearOptions = years.map(year => `<option value="${year}">${year}</option>`).join('');
+  $('#calendar-year').innerHTML = yearOptions;
+  $('#stats-year').innerHTML = yearOptions;
+  const monthOptions = monthNames.map((month, index) => `<option value="${index + 1}">${month}</option>`).join('');
+  $('#calendar-month').innerHTML = monthOptions;
+  $('#stats-month').innerHTML = `<option value="">Tot anul</option>${monthOptions}`;
+}
+
+function renderCalendar() {
+  const selected = state.selectedDate;
+  $('#calendar-grid').innerHTML = state.calendar.days.map(day => `
+    <button class="calendar-cell ${day.date === isoToday() ? 'is-today' : ''} ${day.date === selected ? 'is-selected' : ''}" data-calendar-date="${day.date}">
+      <header>
+        <strong>${new Date(`${day.date}T12:00:00`).getDate()}</strong>
+        ${day.entries.length ? `<span class="calendar-badge">${hours(day.totalHours)}</span>` : ''}
+      </header>
+      <div class="calendar-items">
+        ${day.entries.slice(0, 3).map(entry => `<span class="calendar-pill" style="background:${entry.color}">${entry.workTypeCode}</span>`).join('')}
+      </div>
+    </button>
+  `).join('');
+  const selectedDay = state.calendar.days.find(day => day.date === selected) || state.calendar.days.find(day => day.date === isoToday()) || state.calendar.days[0];
+  if (selectedDay) {
+    state.selectedDate = selectedDay.date;
+    $('#calendar-day-summary').textContent = `${dateLabel(selectedDay.date)} · ${selectedDay.entries.length} activități · ${hours(selectedDay.totalHours)} · ${money(selectedDay.totalGross)}`;
+  }
+}
+
+function renderHistory() {
+  $('#history-entries').innerHTML = state.history.entries.length
+    ? state.history.entries.map(entryCard).join('')
+    : '<div class="entry-card"><p class="muted">Nicio activitate în perioada selectată.</p></div>';
+}
+
+function renderStatisticsControls() {
+  const workTypeOptions = ['<option value="">Toate activitățile</option>', ...state.app.workTypes.map(type => `<option value="${type.id}">${type.name}</option>`)].join('');
+  $('#history-work-type').innerHTML = workTypeOptions;
+  $('#stats-work-type').innerHTML = workTypeOptions;
+  $('#compare-work-type').innerHTML = workTypeOptions;
+  $('#compare-from-a').value = state.app.comparisonPreset.fromA;
+  $('#compare-to-a').value = state.app.comparisonPreset.toA;
+  $('#compare-from-b').value = state.app.comparisonPreset.fromB;
+  $('#compare-to-b').value = state.app.comparisonPreset.toB;
+}
+
+function renderStatistics() {
+  const summary = state.statistics.summary;
+  $('#stats-hours').textContent = hours(summary.totalHoursWorked);
+  $('#stats-days').textContent = summary.totalDaysWorked;
+  $('#stats-gross').textContent = money(summary.totalGrossEstimated);
+  $('#stats-average').textContent = hours(summary.averageHoursPerDay);
+  const values = state.statistics.monthly.points.map(point => Number(point.value));
+  const max = Math.max(...values, 1);
+  $('#monthly-chart').innerHTML = state.statistics.monthly.points.map(point => `
+    <div class="chart-bar-col">
+      <span class="muted">${point.value}</span>
+      <div class="chart-bar" style="height:${Math.max((Number(point.value) / max) * 180, 6)}px"></div>
+      <small>${monthNames[point.month - 1].slice(0, 3)}</small>
+    </div>
+  `).join('');
+}
+
+function renderProfile() {
+  const me = state.app.me;
+  $('#profile-first').value = me.firstName || '';
+  $('#profile-last').value = me.lastName || '';
+  $('#profile-email').value = me.email || '';
+  $('#profile-rate').value = me.hourlyRate || 0;
+  $('#profile-currency').value = me.currency || 'EUR';
+  $('#profile-break').value = String(me.defaultBreakMinutes ?? 30);
+  $('#profile-language').value = me.language || 'ro';
+  $('#work-types-list').innerHTML = state.app.workTypes.map(type => `
+    <article class="entry-card">
+      <div class="entry-main">
+        <div>
+          <strong>${type.name}</strong>
+          <div class="entry-meta">
+            <span>${type.code}</span>
+            <span style="color:${type.color}">${type.color}</span>
+            <span>${type.customHourlyRate ? money(type.customHourlyRate) : 'tarif general'}</span>
+            <span>${type.defaultBreakMinutes} min</span>
+          </div>
+        </div>
+        <div class="inline-actions">
+          <button class="btn ghost small" data-edit-type="${type.id}">Editează</button>
+          <button class="btn ghost small" data-deactivate-type="${type.id}">Dezactivează</button>
+        </div>
+      </div>
+    </article>
+  `).join('');
+}
+
+function renderWorkTypeOptions() {
+  const options = state.app.workTypes.map(type => `<option value="${type.id}" data-rate="${type.customHourlyRate || ''}" data-break="${type.defaultBreakMinutes}" data-color="${type.color}">${type.name}</option>`).join('');
+  $('#entry-work-type').innerHTML = options;
+}
+
+function openEntry(entry = null, date = isoToday()) {
+  $('#entry-form').reset();
+  $('#entry-error').textContent = '';
+  $('#entry-id').value = entry?.id || '';
+  $('#entry-title').textContent = entry ? 'Editează activitate' : 'Adaugă activitate';
+  $('#entry-date').value = entry?.date || date;
+  $('#entry-work-type').value = entry?.id ? state.app.workTypes.find(type => type.code === entry.workTypeCode)?.id : state.app.workTypes[0]?.id;
+  $('#entry-start').value = entry?.startTime?.slice(0, 5) || '09:00';
+  $('#entry-end').value = entry?.endTime?.slice(0, 5) || '17:30';
+  $('#entry-break').value = String(entry?.breakMinutes ?? state.app.me.defaultBreakMinutes ?? 30);
+  $('#entry-notes').value = entry?.notes || '';
+  updateEntryPreview();
+  $('#entry-dialog').showModal();
+}
+
+function updateEntryPreview() {
+  const typeId = Number($('#entry-work-type').value);
+  const type = state.app.workTypes.find(item => item.id === typeId);
+  const start = $('#entry-start').value;
+  const end = $('#entry-end').value;
+  const breakMinutes = Number($('#entry-break').value || 0);
+  let paidMinutes = 0;
+  if (start && end) {
+    const startMinutes = Number(start.slice(0, 2)) * 60 + Number(start.slice(3, 5));
+    const endMinutes = Number(end.slice(0, 2)) * 60 + Number(end.slice(3, 5));
+    let diff = endMinutes - startMinutes;
+    if (diff <= 0) diff += 24 * 60;
+    paidMinutes = Math.max(diff - breakMinutes, 0);
+  }
+  const workedHours = paidMinutes / 60;
+  const rate = Number(type?.customHourlyRate || state.app.me.hourlyRate || 0);
+  $('#entry-hours-preview').textContent = hours(workedHours);
+  $('#entry-gross-preview').textContent = `${money(workedHours * rate)} brut estimat`;
+}
+
+async function downloadAuthenticated(url, filename) {
+  const response = await fetch(url, {
+    headers: state.token ? { Authorization: `Bearer ${state.token}` } : {}
+  });
+  if (!response.ok) {
+    toast('Nu am putut genera exportul.');
+    return;
+  }
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
+async function submitEntry(event) {
+  event.preventDefault();
+  $('#entry-error').textContent = '';
+  const payload = {
+    date: $('#entry-date').value,
+    workTypeId: Number($('#entry-work-type').value),
+    startTime: $('#entry-start').value,
+    endTime: $('#entry-end').value,
+    breakMinutes: Number($('#entry-break').value),
+    notes: $('#entry-notes').value.trim() || null
+  };
+  try {
+    const id = $('#entry-id').value;
+    if (id) {
+      await api(`/api/work-entries/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+    } else {
+      await api('/api/work-entries', { method: 'POST', body: JSON.stringify(payload) });
+    }
+    $('#entry-dialog').close();
+    await loadInitial();
+    toast('Activitatea a fost salvată.');
+  } catch (error) {
+    $('#entry-error').textContent = error.message;
+  }
+}
+
+async function submitRegister(event) {
+  event.preventDefault();
+  $('#register-error').textContent = '';
+  try {
+    const response = await api('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: $('#register-email').value.trim(),
+        password: $('#register-password').value,
+        confirmPassword: $('#register-confirm-password').value
+      })
+    });
+    state.auth.pendingEmail = response.email;
+    if (response.demoCode) {
+      $('#register-demo-code').textContent = response.demoCode;
+      $('#register-code-box').classList.remove('hidden');
+      $('#confirm-code').value = response.demoCode;
+    }
+    $('#confirm-dialog').showModal();
+    toast('Cont creat. Confirmă codul primit pe email.');
+  } catch (error) {
+    $('#register-error').textContent = error.message;
+  }
+}
+
+async function submitConfirm(event) {
+  event.preventDefault();
+  $('#confirm-error').textContent = '';
+  try {
+    await api('/api/auth/register/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ code: $('#confirm-code').value.trim() })
+    });
+    $('#confirm-dialog').close();
+    $('#register-dialog').close();
+    $('#login').value = state.auth.pendingEmail;
+    $('#password').value = '';
+    toast('Email confirmat. Te poți autentifica.');
+  } catch (error) {
+    $('#confirm-error').textContent = error.message;
+  }
+}
+
+async function submitResetRequest() {
+  $('#reset-error').textContent = '';
+  try {
+    const response = await api('/api/auth/password-reset/request', {
+      method: 'POST',
+      body: JSON.stringify({ login: $('#reset-login').value.trim() })
+    });
+    if (response.demoCode) {
+      $('#reset-demo-code').textContent = response.demoCode;
+      $('#reset-code-box').classList.remove('hidden');
+      $('#reset-code').value = response.demoCode;
+    }
+    toast('Codul de resetare a fost trimis.');
+  } catch (error) {
+    $('#reset-error').textContent = error.message;
+  }
+}
+
+async function submitReset(event) {
+  event.preventDefault();
+  $('#reset-error').textContent = '';
+  try {
+    await api('/api/auth/password-reset/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ code: $('#reset-code').value.trim(), newPassword: $('#reset-password').value })
+    });
+    $('#reset-dialog').close();
+    toast('Parola a fost schimbată.');
+  } catch (error) {
+    $('#reset-error').textContent = error.message;
+  }
+}
+
+async function submitLogin(event) {
+  event.preventDefault();
+  $('#login-error').textContent = '';
+  try {
+    const response = await api('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ login: $('#login').value.trim(), password: $('#password').value })
+    });
+    state.token = response.token;
+    sessionStorage.setItem('roomly.token', response.token);
+    await loadInitial();
+    if (!response.onboardingComplete) openOnboarding();
+  } catch (error) {
+    sessionStorage.removeItem('roomly.token');
+    state.token = null;
+    $('#login-error').textContent = error.message;
+  }
+}
+
+function openOnboarding() {
+  $('#onboarding-first').value = state.app.me.firstName || '';
+  $('#onboarding-last').value = state.app.me.lastName || '';
+  $('#onboarding-rate').value = state.app.me.hourlyRate || 16;
+  $('#onboarding-currency').value = state.app.me.currency || 'EUR';
+  $('#onboarding-break').value = String(state.app.me.defaultBreakMinutes ?? 30);
+  $('#onboarding-language').value = state.app.me.language || 'ro';
+  $('#onboarding-dialog').showModal();
+}
+
+async function submitOnboarding(event) {
+  event.preventDefault();
+  $('#onboarding-error').textContent = '';
+  const payload = {
+    firstName: $('#onboarding-first').value.trim(),
+    lastName: $('#onboarding-last').value.trim(),
+    defaultHourlyRate: Number($('#onboarding-rate').value),
+    currency: $('#onboarding-currency').value,
+    defaultBreakMinutes: Number($('#onboarding-break').value),
+    language: $('#onboarding-language').value
+  };
+  try {
+    await api('/api/me/profile', { method: 'PUT', body: JSON.stringify(payload) });
+    $('#onboarding-dialog').close();
+    await loadInitial();
+    toast('Profilul a fost salvat.');
+  } catch (error) {
+    $('#onboarding-error').textContent = error.message;
+  }
+}
+
+async function submitProfile(event) {
+  event.preventDefault();
+  $('#profile-error').textContent = '';
+  try {
+    await api('/api/me/profile', {
+      method: 'PUT',
+      body: JSON.stringify({
+        firstName: $('#profile-first').value.trim(),
+        lastName: $('#profile-last').value.trim(),
+        defaultHourlyRate: Number($('#profile-rate').value),
+        currency: $('#profile-currency').value,
+        defaultBreakMinutes: Number($('#profile-break').value),
+        language: $('#profile-language').value
+      })
+    });
+    await loadInitial();
+    toast('Profilul a fost actualizat.');
+  } catch (error) {
+    $('#profile-error').textContent = error.message;
+  }
+}
+
+async function submitWorkType(event) {
+  event.preventDefault();
+  const id = $('#work-type-id').value;
+  const payload = {
+    name: $('#work-type-name').value.trim(),
+    code: $('#work-type-code').value.trim().toUpperCase(),
+    color: $('#work-type-color').value,
+    active: true,
+    customHourlyRate: $('#work-type-rate').value ? Number($('#work-type-rate').value) : null,
+    defaultBreakMinutes: Number($('#work-type-break').value)
+  };
+  if (id) {
+    await api(`/api/work-types/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  } else {
+    await api('/api/work-types', { method: 'POST', body: JSON.stringify(payload) });
+  }
+  resetWorkTypeForm();
+  await loadInitial();
+  toast('Tipul de activitate a fost salvat.');
+}
+
+function resetWorkTypeForm() {
+  $('#work-type-form').reset();
+  $('#work-type-id').value = '';
+  $('#work-type-color').value = '#3B82F6';
+}
+
+async function runComparison() {
+  const query = new URLSearchParams({
+    fromA: $('#compare-from-a').value,
+    toA: $('#compare-to-a').value,
+    fromB: $('#compare-from-b').value,
+    toB: $('#compare-to-b').value,
+    metric: $('#compare-metric').value
+  });
+  if ($('#compare-work-type').value) query.set('workTypeId', $('#compare-work-type').value);
+  const result = await api(`/api/statistics/compare?${query.toString()}`);
+  $('#compare-total-a').textContent = result.metric === 'gross' ? money(result.totalA) : result.metric === 'days' ? result.totalA : hours(result.totalA);
+  $('#compare-total-b').textContent = result.metric === 'gross' ? money(result.totalB) : result.metric === 'days' ? result.totalB : hours(result.totalB);
+  $('#compare-diff').textContent = result.metric === 'gross' ? money(result.differenceAbsolute) : result.metric === 'days' ? result.differenceAbsolute : hours(result.differenceAbsolute);
+  $('#compare-percent').textContent = `${result.differencePercent}%`;
+}
+
+function bindEvents() {
+  $('#login-form').addEventListener('submit', submitLogin);
+  $('#register-form').addEventListener('submit', submitRegister);
+  $('#confirm-form').addEventListener('submit', submitConfirm);
+  $('#reset-form').addEventListener('submit', submitReset);
+  $('#request-reset-code').addEventListener('click', submitResetRequest);
+  $('#onboarding-form').addEventListener('submit', submitOnboarding);
+  $('#profile-form').addEventListener('submit', submitProfile);
+  $('#password-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    $('#password-error').textContent = '';
+    try {
+      await api('/api/me/password', {
+        method: 'PUT',
+        body: JSON.stringify({
+          currentPassword: $('#current-password').value,
+          newPassword: $('#new-password').value
+        })
+      });
+      $('#password-form').reset();
+      toast('Parola a fost schimbată.');
+    } catch (error) {
+      $('#password-error').textContent = error.message;
+    }
+  });
+  $('#work-type-form').addEventListener('submit', submitWorkType);
+  $('#entry-form').addEventListener('submit', submitEntry);
+  $('#open-entry').addEventListener('click', () => openEntry());
+  $('#today-add-button').addEventListener('click', () => openEntry());
+  $('#close-entry').addEventListener('click', () => $('#entry-dialog').close());
+  $('#cancel-entry').addEventListener('click', () => $('#entry-dialog').close());
+  $('#open-register').addEventListener('click', () => $('#register-dialog').showModal());
+  $('#close-register').addEventListener('click', () => $('#register-dialog').close());
+  $('#cancel-register').addEventListener('click', () => $('#register-dialog').close());
+  $('#close-confirm').addEventListener('click', () => $('#confirm-dialog').close());
+  $('#open-reset').addEventListener('click', () => { $('#reset-login').value = $('#login').value.trim(); $('#reset-dialog').showModal(); });
+  $('#close-reset').addEventListener('click', () => $('#reset-dialog').close());
+  $('#logout').addEventListener('click', () => { sessionStorage.clear(); location.reload(); });
+  $('#menu-toggle').addEventListener('click', () => $('.sidebar').classList.toggle('open'));
+  $$('.nav-link').forEach(button => button.addEventListener('click', () => navigate(button.dataset.view)));
+  ['#entry-start', '#entry-end', '#entry-break', '#entry-work-type'].forEach(selector => $(selector).addEventListener('input', updateEntryPreview));
+  $('#calendar-month').addEventListener('change', async () => { await loadCalendar(Number($('#calendar-year').value), Number($('#calendar-month').value)); await loadHistory(); renderCalendar(); renderHistory(); });
+  $('#calendar-year').addEventListener('change', async () => { await loadCalendar(Number($('#calendar-year').value), Number($('#calendar-month').value)); await loadHistory(); renderCalendar(); renderHistory(); });
+  $('#history-work-type').addEventListener('change', async () => { await loadHistory(); renderHistory(); });
+  $('#stats-year').addEventListener('change', async () => { await loadStatistics(); renderStatistics(); });
+  $('#stats-month').addEventListener('change', async () => { await loadStatistics(); renderStatistics(); });
+  $('#stats-work-type').addEventListener('change', async () => { await loadStatistics(); renderStatistics(); });
+  $('#stats-metric').addEventListener('change', async () => { await loadStatistics(); renderStatistics(); });
+  $('#run-compare').addEventListener('click', runComparison);
+  $('#reset-work-type').addEventListener('click', resetWorkTypeForm);
+  $('#delete-account').addEventListener('click', async () => {
+    if (!confirm('Sigur vrei să dezactivezi contul?')) return;
+    await api('/api/me', { method: 'DELETE' });
+    sessionStorage.clear();
+    location.reload();
+  });
+  $('#calendar-grid').addEventListener('click', async event => {
+    const button = event.target.closest('[data-calendar-date]');
+    if (!button) return;
+    state.selectedDate = button.dataset.calendarDate;
+    renderCalendar();
+    state.history = await api(`/api/work-entries?from=${state.selectedDate}&to=${state.selectedDate}${$('#history-work-type').value ? `&workTypeId=${$('#history-work-type').value}` : ''}`);
+    renderHistory();
+  });
+  document.body.addEventListener('click', async event => {
+    const editEntry = event.target.closest('[data-edit-entry]');
+    if (editEntry) {
+      const allEntries = [...state.today.entries, ...state.history.entries];
+      const entry = allEntries.find(item => String(item.id) === editEntry.dataset.editEntry);
+      if (entry) openEntry(entry, entry.date);
+      return;
+    }
+    const duplicateEntry = event.target.closest('[data-duplicate-entry]');
+    if (duplicateEntry) {
+      await api(`/api/work-entries/${duplicateEntry.dataset.duplicateEntry}/duplicate`, { method: 'POST', body: JSON.stringify({ date: isoToday() }) });
+      await loadInitial();
+      toast('Activitatea a fost duplicată pentru astăzi.');
+      return;
+    }
+    const deleteEntry = event.target.closest('[data-delete-entry]');
+    if (deleteEntry) {
+      if (!confirm('Sigur vrei să ștergi această activitate?')) return;
+      await api(`/api/work-entries/${deleteEntry.dataset.deleteEntry}`, { method: 'DELETE' });
+      await loadInitial();
+      toast('Activitatea a fost ștearsă.');
+      return;
+    }
+    const editType = event.target.closest('[data-edit-type]');
+    if (editType) {
+      const type = state.app.workTypes.find(item => String(item.id) === editType.dataset.editType);
+      if (!type) return;
+      $('#work-type-id').value = type.id;
+      $('#work-type-name').value = type.name;
+      $('#work-type-code').value = type.code;
+      $('#work-type-color').value = type.color;
+      $('#work-type-rate').value = type.customHourlyRate || '';
+      $('#work-type-break').value = String(type.defaultBreakMinutes ?? 30);
+      navigate('profile');
+      return;
+    }
+    const deactivateType = event.target.closest('[data-deactivate-type]');
+    if (deactivateType) {
+      await api(`/api/work-types/${deactivateType.dataset.deactivateType}/deactivate`, { method: 'PUT' });
+      await loadInitial();
+      toast('Tipul de activitate a fost dezactivat.');
+    }
+  });
+
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  $('#export-month-csv').addEventListener('click', () => downloadAuthenticated(`/api/export/csv?year=${currentYear}&month=${currentMonth}`, 'roomly-month.csv'));
+  $('#export-year-csv').addEventListener('click', () => downloadAuthenticated(`/api/export/csv?year=${currentYear}`, 'roomly-year.csv'));
+  $('#export-month-xlsx').addEventListener('click', () => downloadAuthenticated(`/api/export/excel?year=${currentYear}&month=${currentMonth}`, 'roomly-month.xlsx'));
+  $('#export-year-xlsx').addEventListener('click', () => downloadAuthenticated(`/api/export/excel?year=${currentYear}`, 'roomly-year.xlsx'));
+}
+
+bindEvents();
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+if (state.token) {
+  loadInitial().catch(() => {
+    sessionStorage.clear();
+    state.token = null;
+  });
+}

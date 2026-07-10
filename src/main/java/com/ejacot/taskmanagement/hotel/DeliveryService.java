@@ -2,6 +2,7 @@ package com.ejacot.taskmanagement.hotel;
 
 import com.ejacot.taskmanagement.user.UserAccount;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.SimpleMailMessage;
@@ -16,14 +17,14 @@ public class DeliveryService {
     private final String mailFromName;
 
     public DeliveryService(NotificationRepository notifications, OutboundMessageRepository outbound, PushSubscriptionRepository pushSubscriptions,
-                           JavaMailSender mailSender,
+                           ObjectProvider<JavaMailSender> mailSender,
                            @Value("${roomly.mail.enabled:false}") boolean mailEnabled,
                            @Value("${roomly.mail.from:no-reply@roomly.local}") String mailFrom,
                            @Value("${roomly.mail.from-name:Roomly Work}") String mailFromName) {
         this.notifications = notifications;
         this.outbound = outbound;
         this.pushSubscriptions = pushSubscriptions;
-        this.mailSender = mailSender;
+        this.mailSender = mailSender.getIfAvailable();
         this.mailEnabled = mailEnabled;
         this.mailFrom = mailFrom;
         this.mailFromName = mailFromName;
@@ -35,7 +36,7 @@ public class DeliveryService {
     public void queueEmail(UserAccount user, String subject, String body) {
         String recipient = user.getEmail() == null || user.getEmail().isBlank() ? user.getUsername() : user.getEmail();
         OutboundMessage message = outbound.save(new OutboundMessage(recipient, "EMAIL", subject, body));
-        if (mailEnabled && recipient.contains("@")) {
+        if (mailEnabled && recipient.contains("@") && mailSender != null) {
             sendEmail(message, recipient, subject, body);
         }
     }
