@@ -17,4 +17,6 @@ public class OutboundMessage {
     public OutboundMessage(String recipient, String channel, String subject, String body) {
         this.recipient = recipient; this.channel = channel; this.subject = subject; this.body = body;
     }
+    public void sent(){this.status="SENT";}
+    public void failed(){this.status="FAILED";}
 }

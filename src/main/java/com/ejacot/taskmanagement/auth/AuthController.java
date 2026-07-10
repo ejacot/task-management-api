@@ -17,6 +17,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -38,11 +39,13 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final DeliveryService delivery;
+    private final boolean mailEnabled;
     private final SecureRandom random = new SecureRandom();
 
     public AuthController(UserAccountRepository users, HotelRepository hotels, WorkTypeRepository workTypes,
                           PayRateRepository payRates, PasswordEncoder passwordEncoder,
-                          TokenService tokenService, DeliveryService delivery) {
+                          TokenService tokenService, DeliveryService delivery,
+                          @Value("${roomly.mail.enabled:false}") boolean mailEnabled) {
         this.users = users;
         this.hotels = hotels;
         this.workTypes = workTypes;
@@ -50,6 +53,7 @@ public class AuthController {
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
         this.delivery = delivery;
+        this.mailEnabled = mailEnabled;
     }
 
     @PostMapping("/login")
@@ -94,7 +98,7 @@ public class AuthController {
         users.save(saved);
         payRates.save(new PayRate(saved, BigDecimal.ZERO, LocalDate.now()));
         delivery.queueEmail(saved, "Cod confirmare Roomly", "Codul tau de confirmare este: " + code + ". Expira in 30 minute.");
-        return new RegisterResponse("Cont creat. Confirmă codul primit pe email.", code, saved.getEmailVerificationExpiresAt());
+        return new RegisterResponse("Cont creat. Confirmă codul primit pe email.", mailEnabled ? null : code, saved.getEmailVerificationExpiresAt());
     }
 
     @PostMapping("/register/confirm")
@@ -134,7 +138,7 @@ public class AuthController {
         users.save(user);
         delivery.queueEmail(user, "Cod resetare Roomly", "Codul tau de resetare este: " + code + ". Expira in 30 minute.");
         delivery.queueSms(user, "Roomly: cod resetare " + code);
-        return new ResetRequestResponse("Codul de resetare a fost generat si pus in coada de trimitere.", code, user.getPasswordResetExpiresAt());
+        return new ResetRequestResponse("Codul de resetare a fost trimis pe email.", mailEnabled ? null : code, user.getPasswordResetExpiresAt());
     }
 
     @PostMapping("/password-reset/confirm")

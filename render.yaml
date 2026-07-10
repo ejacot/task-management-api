@@ -15,6 +15,20 @@ services:
           property: connectionString
       - key: ROOMLY_TOKEN_SECRET
         generateValue: true
+      - key: ROOMLY_MAIL_ENABLED
+        value: "true"
+      - key: ROOMLY_SMTP_HOST
+        value: smtp.gmail.com
+      - key: ROOMLY_SMTP_PORT
+        value: "587"
+      - key: ROOMLY_SMTP_USERNAME
+        value: eusebiujacot@gmail.com
+      - key: ROOMLY_SMTP_PASSWORD
+        sync: false
+      - key: ROOMLY_MAIL_FROM
+        value: eusebiujacot@gmail.com
+      - key: ROOMLY_MAIL_FROM_NAME
+        value: Roomly Work
 
 databases:
   - name: roomly-postgres

@@ -1,6 +1,18 @@
 spring:
   application:
     name: task-management-api
+  mail:
+    host: ${ROOMLY_SMTP_HOST:localhost}
+    port: ${ROOMLY_SMTP_PORT:587}
+    username: ${ROOMLY_SMTP_USERNAME:}
+    password: ${ROOMLY_SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/task_management}
     username: ${DB_USERNAME:task_user}
@@ -29,3 +41,8 @@ server:
   error:
     include-message: never
 
+roomly:
+  mail:
+    enabled: ${ROOMLY_MAIL_ENABLED:false}
+    from: ${ROOMLY_MAIL_FROM:no-reply@roomly.local}
+    from-name: ${ROOMLY_MAIL_FROM_NAME:Roomly Work}
