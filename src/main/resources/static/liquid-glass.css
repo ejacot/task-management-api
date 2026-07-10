@@ -454,6 +454,71 @@ dialog::backdrop{
   background:rgba(15,23,42,.34);
   backdrop-filter:blur(18px) saturate(120%);
 }
+.auth-dialog{
+  width:min(760px,calc(100vw - 36px));
+  max-height:min(86vh,820px);
+  overflow:auto;
+  padding:0;
+  border-radius:34px;
+  background:
+    radial-gradient(circle at 18% 0%,rgba(255,255,255,.88),transparent 34%),
+    linear-gradient(145deg,rgba(255,255,255,.90),rgba(239,246,255,.82));
+}
+.small-auth-dialog{
+  width:min(480px,calc(100vw - 36px));
+}
+.auth-dialog form{
+  padding:34px;
+}
+.auth-dialog .dialog-head{
+  align-items:flex-start;
+  gap:18px;
+  margin-bottom:22px;
+}
+.auth-dialog .dialog-head h2{
+  margin:0;
+  font-size:clamp(30px,4vw,44px);
+  line-height:.98;
+}
+.auth-dialog .dialog-head .muted{
+  margin:10px 0 0;
+  max-width:520px;
+}
+.auth-dialog .dialog-head button{
+  flex:0 0 auto;
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border-radius:16px;
+  background:rgba(255,255,255,.64);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.78);
+  font-size:24px;
+}
+.auth-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.auth-dialog label{
+  margin:0 0 7px;
+  color:#20242c;
+}
+.auth-dialog input{
+  min-height:56px;
+  font-size:16px;
+}
+.auth-dialog .auth-grid + label{
+  margin-top:16px;
+}
+.auth-dialog .dialog-actions{
+  align-items:center;
+  margin-top:24px;
+}
+.auth-dialog .dialog-actions .btn{
+  min-height:50px;
+  padding-inline:22px;
+}
 #log-form,
 #request-form,
 .day-detail-content,
@@ -556,6 +621,19 @@ dialog::backdrop{
   }
   dialog{
     border-radius:28px;
+  }
+  .auth-dialog form{
+    padding:24px;
+  }
+  .auth-grid{
+    grid-template-columns:1fr;
+  }
+  .auth-dialog .dialog-actions{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .auth-dialog .dialog-actions .btn{
+    width:100%;
   }
 }
 
