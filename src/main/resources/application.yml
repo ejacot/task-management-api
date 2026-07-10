@@ -17,7 +17,7 @@ spring:
             enable: true
             required: true
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/task_management}
+    url: ${DB_URL:${DATABASE_URL:jdbc:postgresql://localhost:5432/task_management}}
     username: ${DB_USERNAME:task_user}
     password: ${DB_PASSWORD:task_password}
   jpa:
@@ -45,7 +45,7 @@ springdoc:
 
 server:
   error:
-    include-message: never
+    include-message: always
 
 roomly:
   mail:

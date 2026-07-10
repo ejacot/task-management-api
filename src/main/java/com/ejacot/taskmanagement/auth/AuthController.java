@@ -1,6 +1,7 @@
 package com.ejacot.taskmanagement.auth;
 
 import com.ejacot.taskmanagement.hotel.DeliveryService;
+import com.ejacot.taskmanagement.hotel.EmailDeliveryException;
 import com.ejacot.taskmanagement.hotel.PayRate;
 import com.ejacot.taskmanagement.hotel.PayRateRepository;
 import com.ejacot.taskmanagement.hotel.UserRole;
@@ -18,7 +19,12 @@ import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -63,17 +69,21 @@ public class AuthController {
         UserAccount user = users.findByLogin(request.login())
                 .filter(UserAccount::isActive)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Contul sau parola nu sunt corecte"));
+
         if (!user.isEmailVerified()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Confirmă emailul înainte de autentificare.");
         }
+
         if (user.isLocked()) {
             throw new ResponseStatusException(HttpStatus.LOCKED, "Prea multe încercări greșite. Încearcă din nou mai târziu.");
         }
+
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             user.registerLoginFailure();
             users.save(user);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Contul sau parola nu sunt corecte");
         }
+
         user.registerLoginSuccess();
         users.save(user);
         boolean onboardingComplete = profiles.findByUserId(user.getId()).map(UserProfile::isCompleted).orElse(false);
@@ -81,54 +91,108 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @Transactional
     @ResponseStatus(HttpStatus.CREATED)
     public RegisterResponse register(@Valid @RequestBody RegisterRequest request) {
         if (!request.password().equals(request.confirmPassword())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Parolele nu coincid");
         }
+
         String email = request.email().trim().toLowerCase();
         if (users.existsByEmail(email)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email existent");
         }
-        UserAccount saved = new UserAccount(email, passwordEncoder.encode(request.password()), email, null,
-                UserRole.EMPLOYEE, BigDecimal.ZERO, null);
+
+        UserAccount user = new UserAccount(
+                email,
+                passwordEncoder.encode(request.password()),
+                email,
+                null,
+                UserRole.EMPLOYEE,
+                BigDecimal.ZERO,
+                null
+        );
+
         String code = code();
-        saved.requestEmailVerification(code, Instant.now().plus(Duration.ofMinutes(30)));
-        saved = users.save(saved);
+        user.requestEmailVerification(code, Instant.now().plus(Duration.ofMinutes(30)));
+        UserAccount saved = users.save(user);
         profiles.save(new UserProfile(saved));
         seedDefaultWorkTypes(saved);
         payRates.save(new PayRate(saved, BigDecimal.ZERO, LocalDate.now()));
-        delivery.queueEmail(saved, "Cod confirmare Roomly", "Codul tău de confirmare este: " + code + ". Expiră în 30 minute.");
-        return new RegisterResponse("Cont creat. Confirmă codul primit pe email.", mailEnabled ? null : code, saved.getEmailVerificationExpiresAt(), saved.getEmail());
+
+        try {
+            delivery.sendRequiredEmail(
+                    saved,
+                    "Cod confirmare Roomly",
+                    "Codul tău de confirmare este: " + code + ". Expiră în 30 minute."
+            );
+        } catch (EmailDeliveryException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Nu am putut trimite emailul de confirmare. Încearcă din nou peste câteva minute.",
+                    exception
+            );
+        }
+
+        return new RegisterResponse(
+                "Cont creat. Confirmă codul primit pe email.",
+                mailEnabled ? null : code,
+                saved.getEmailVerificationExpiresAt(),
+                saved.getEmail()
+        );
     }
 
     @PostMapping("/register/confirm")
     public UserResponse confirmRegistration(@Valid @RequestBody ConfirmRegistrationRequest request) {
         UserAccount user = users.findByEmailVerificationCode(request.code())
-                .filter(value -> value.getEmailVerificationExpiresAt() != null && value.getEmailVerificationExpiresAt().isAfter(Instant.now()))
+                .filter(value -> value.getEmailVerificationExpiresAt() != null
+                        && value.getEmailVerificationExpiresAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cod invalid sau expirat"));
+
         user.verifyEmail();
         users.save(user);
         return new UserResponse(user.getId(), user.getUsername(), user.getCreatedAt());
     }
 
     @PostMapping("/password-reset/request")
+    @Transactional
     public ResetRequestResponse resetRequest(@Valid @RequestBody ResetRequest request) {
         UserAccount user = users.findByLogin(request.login())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Contul nu există"));
+
         String code = code();
         user.requestPasswordReset(code, Instant.now().plus(Duration.ofMinutes(30)));
         users.save(user);
-        delivery.queueEmail(user, "Cod resetare Roomly", "Codul tău de resetare este: " + code + ". Expiră în 30 minute.");
+
+        try {
+            delivery.sendRequiredEmail(
+                    user,
+                    "Cod resetare Roomly",
+                    "Codul tău de resetare este: " + code + ". Expiră în 30 minute."
+            );
+        } catch (EmailDeliveryException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Nu am putut trimite emailul de resetare. Încearcă din nou peste câteva minute.",
+                    exception
+            );
+        }
+
         delivery.queueSms(user, "Roomly: cod resetare " + code);
-        return new ResetRequestResponse("Codul de resetare a fost trimis pe email.", mailEnabled ? null : code, user.getPasswordResetExpiresAt());
+        return new ResetRequestResponse(
+                "Codul de resetare a fost trimis pe email.",
+                mailEnabled ? null : code,
+                user.getPasswordResetExpiresAt()
+        );
     }
 
     @PostMapping("/password-reset/confirm")
     public UserResponse resetConfirm(@Valid @RequestBody ResetConfirm request) {
         UserAccount user = users.findByPasswordResetCode(request.code())
-                .filter(value -> value.getPasswordResetExpiresAt() != null && value.getPasswordResetExpiresAt().isAfter(Instant.now()))
+                .filter(value -> value.getPasswordResetExpiresAt() != null
+                        && value.getPasswordResetExpiresAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cod invalid sau expirat"));
+
         user.resetPassword(passwordEncoder.encode(request.newPassword()));
         users.save(user);
         return new UserResponse(user.getId(), user.getUsername(), user.getCreatedAt());
@@ -137,16 +201,32 @@ public class AuthController {
     public record RegisterRequest(
             @NotBlank @Email @Size(max = 150) String email,
             @NotBlank @Size(min = 8, max = 72) String password,
-            @NotBlank @Size(min = 8, max = 72) String confirmPassword) {}
+            @NotBlank @Size(min = 8, max = 72) String confirmPassword) {
+    }
 
-    public record LoginRequest(@NotBlank String login, @NotBlank String password) {}
-    public record LoginResponse(String token, String username, String role, boolean onboardingComplete) {}
-    public record ResetRequest(@NotBlank String login) {}
-    public record ResetConfirm(@NotBlank String code, @NotBlank @Size(min = 8, max = 72) String newPassword) {}
-    public record ConfirmRegistrationRequest(@NotBlank String code) {}
-    public record RegisterResponse(String message, String demoCode, Instant expiresAt, String email) {}
-    public record UserResponse(Long id, String username, Instant createdAt) {}
-    public record ResetRequestResponse(String message, String demoCode, Instant expiresAt) {}
+    public record LoginRequest(@NotBlank String login, @NotBlank String password) {
+    }
+
+    public record LoginResponse(String token, String username, String role, boolean onboardingComplete) {
+    }
+
+    public record ResetRequest(@NotBlank String login) {
+    }
+
+    public record ResetConfirm(@NotBlank String code, @NotBlank @Size(min = 8, max = 72) String newPassword) {
+    }
+
+    public record ConfirmRegistrationRequest(@NotBlank String code) {
+    }
+
+    public record RegisterResponse(String message, String demoCode, Instant expiresAt, String email) {
+    }
+
+    public record UserResponse(Long id, String username, Instant createdAt) {
+    }
+
+    public record ResetRequestResponse(String message, String demoCode, Instant expiresAt) {
+    }
 
     private String code() {
         return String.valueOf(100000 + random.nextInt(900000));
